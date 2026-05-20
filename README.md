@@ -2,4 +2,177 @@
 
 [![GitHub release](https://img.shields.io/github/v/release/3q110/Tank1990)](https://github.com/3q110/Tank1990/releases)
 [![GitHub stars](https://img.shields.io/github/stars/3q110/Tank1990)](https://github.com/3q110/Tank1990/stargazers)
-[![GitHub license](https://img.shields.io/github/license/3q110/Tank1990)](https://github.com
+[![GitHub license](https://img.shields.io/github/license/3q110/Tank1990)](https://github.com/3q110/Tank1990/blob/master/LICENSE)
+
+> 🎯 **在线游玩**：<https://3q110.github.io/Tank1990>
+
+经典90坦克大战（Battle City）网页版游戏，重温FC经典游戏的乐趣！纯原生 HTML5 + Canvas 实现，零外部依赖。
+
+---
+
+## 📋 目录
+
+- [游戏截图](#游戏截图)
+- [功能特性](#功能特性)
+- [操作说明](#操作说明)
+- [道具系统](#道具系统)
+- [关卡与主题](#关卡与主题)
+- [敌方坦克](#敌方坦克)
+- [手机游玩](#手机游玩)
+- [本地运行](#本地运行)
+- [技术栈](#技术栈)
+- [版本历史](#版本历史)
+
+---
+
+## 游戏截图
+
+| 主菜单 | 游戏进行中 | 手机触控 |
+|:---:|:---:|:---:|
+| ![菜单](https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=pixel+art+retro+video+game+menu+screen+with+title+Battle+City+tank+game+dark+background+yellow+text+retro+arcade&image_size=square_hd) | ![游戏](https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=top+down+2D+tank+battle+game+screenshot+brick+walls+steel+tanks+shooting+pixel+art+retro+style&image_size=square_hd) | ![手机](https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=mobile+phone+screen+showing+retro+tank+game+with+touch+virtual+gamepad+controls+on+screen&image_size=square_hd) |
+
+## 功能特性
+
+- **10个关卡** — 由易到难，涵盖标准、丛林、雪原、沙漠等多种主题地形
+- **单人/双人模式** — 双人本地合作，一人主攻一人防守
+- **3种敌方坦克** — 四轮快速坦克、七轮履带重甲坦克、普通坦克
+- **6种道具** — 闪电护罩、洋枪、五角星、炸弹、定时、喇叭
+- **手机支持** — 虚拟摇杆 + 射击按钮，自动适配屏幕
+- **像素画风** — 复古8-bit风格，Canvas像素渲染
+- **音效系统** — Web Audio API 程序化音效
+
+## 操作说明
+
+### 桌面端
+
+| 操作 | P1（黄色坦克） | P2（绿色坦克） |
+|------|:-----------:|:-----------:|
+| **移动** | W A S D | ↑ ↓ ← → |
+| **射击** | J | 小键盘 0 |
+| **暂停** | P | P |
+
+### 道具快捷键（调试用）
+
+| 按键 | 效果 |
+|:---:|:----:|
+| 1 | 生成闪电护罩 |
+| 2 | 生成洋枪（超级子弹） |
+| 3 | 生成五角星 |
+| 4 | 生成全屏炸弹 |
+| 5 | 生成定时 |
+| 6 | 生成喇叭 |
+
+## 道具系统
+
+| 道具 | 图标 | 效果 |
+|:----:|:----:|:----:|
+| ⚡ 闪电护罩 | 蓝色闪电 | 提供无敌保护，中弹后消失 |
+| 🔫 洋枪 | 红色子弹 | 超级子弹，穿透钢铁，杀敌效率加倍 |
+| ⭐ 五角星 | 金色星星 | 射速加快，集齐3颗变为超级子弹 |
+| 💣 炸弹 | 红色炸弹 | 消灭全场所有敌人（敌人捡到则自爆） |
+| ⏱ 定时 | 紫色时钟 | 冻结所有坦克约8秒 |
+| 📯 喇叭 | 橙色喇叭 | 基地周围升起钢铁护墙保护 |
+
+## 关卡与主题
+
+| 关卡 | 主题 | 敌人数量 | 难度 |
+|:---:|:----:|:--------:|:----:|
+| 1 | 标准 | 16 | ⭐ |
+| 2 | 丛林 | 18 | ⭐⭐ |
+| 3 | 雪原 | 18 | ⭐⭐ |
+| 4 | 沙漠 | 20 | ⭐⭐⭐ |
+| 5 | 雪原 | 22 | ⭐⭐⭐ |
+| 6 | 丛林 | 22 | ⭐⭐⭐ |
+| 7 | 沙漠 | 24 | ⭐⭐⭐⭐ |
+| 8 | 标准 | 24 | ⭐⭐⭐⭐ |
+| 9 | 雪原 | 26 | ⭐⭐⭐⭐⭐ |
+| 10 | 最终 | 28 | ⭐⭐⭐⭐⭐ |
+
+## 敌方坦克
+
+| 类型 | 外观 | 速度 | 生命值 | 特点 |
+|:----:|:----:|:----:|:------:|:----:|
+| **四轮坦克** | 金色，小巧 | ⚡超快（比玩家快） | 1 HP | 灵活难击中，一击必杀 |
+| **七轮履带** | 红色，厚重 | 🐢慢速 | 3 HP | 需3发子弹才能消灭 |
+| **普通坦克** | 银色，标准 | 中等 | 2 HP | 介于两者之间，数量较少 |
+
+## 手机游玩
+
+手机或平板打开游戏后自动进入触屏模式：
+
+```
+┌──────────────────────────────────┐
+│  HUD (生命/关卡/得分/敌人)        │
+├──────────────────────────────────┤
+│                                  │
+│       游戏画面 (自动缩放)          │
+│                                  │
+├──────────────────────────────────┤
+│        ▲             [⏸]         │
+│      ◀ ● ▶          [FIRE]      │
+│        ▼                         │
+│   ← 方向键              射击 →    │
+└──────────────────────────────────┘
+```
+
+- 左手控制方向键
+- 右手点击红色 FIRE 按钮射击
+- 点击 ⏸ 暂停游戏
+- 画布自动缩放适配屏幕
+
+## 本地运行
+
+```bash
+# 克隆仓库
+git clone https://github.com/3q110/Tank1990.git
+
+# 进入目录
+cd Tank1990
+
+# 使用任意静态服务器启动（方式一：Python）
+python -m http.server 8080
+
+# 方式二：Node.js
+npx serve . -p 8080
+
+# 方式三：VS Code Live Server
+# 右键 index.html → Open with Live Server
+```
+
+然后打开浏览器访问 `http://localhost:8080`。
+
+## 技术栈
+
+| 技术 | 用途 |
+|:----:|:----:|
+| **HTML5** | 页面结构与UI布局 |
+| **CSS3** | 像素风格样式、响应式设计、动画 |
+| **JavaScript (ES6+)** | 游戏核心逻辑 |
+| **Canvas 2D API** | 游戏画面渲染 |
+| **Web Audio API** | 程序化音效生成 |
+| **Press Start 2P** | 像素风格字体 |
+
+纯原生实现，**零外部依赖**，打开即玩。
+
+## 版本历史
+
+### v1.0.1 (当前)
+
+- 修复关卡选择按钮闭包问题
+- 增加手机触摸控制（虚拟方向键 + 射击按钮）
+- 响应式布局支持移动设备
+- 10个关卡完整实现
+- 道具系统完善
+
+### v1.0.0
+
+- 初始版本
+- 5个关卡
+- 基本坦克对战功能
+- 键盘操作支持
+
+---
+
+## 许可证
+
+本项目仅供学习和娱乐使用，游戏素材和玩法灵感来源于经典游戏《Battle City》（バトルシティー）。
