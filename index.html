@@ -299,23 +299,51 @@
     display: none;
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: 100px;
+    height: 160px;
     z-index: 100;
     pointer-events: none;
-    padding: 10px 20px;
     user-select: none;
     -webkit-user-select: none;
     touch-action: none;
   }
 
+  #joystick-zone {
+    position: absolute;
+    bottom: 15px;
+    left: 30px;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,255,255,0.15);
+    pointer-events: auto;
+    touch-action: none;
+    z-index: 105;
+  }
+
+  #joystick-knob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.3);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: none;
+    z-index: 106;
+  }
+
   #touch-fire {
     position: absolute;
-    bottom: 10px;
-    right: 20px;
-    width: 72px;
-    height: 72px;
+    bottom: 30px;
+    right: 30px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
-    font-size: 12px;
+    font-size: 13px;
     border: 3px solid rgba(255, 50, 50, 0.6);
     background: rgba(255, 50, 50, 0.2);
     color: #ff6b6b;
@@ -323,7 +351,7 @@
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
-    transition: background 0.1s;
+    transition: background 0.08s, transform 0.08s;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -335,55 +363,7 @@
   #touch-fire:active, #touch-fire.active {
     background: rgba(255, 50, 50, 0.45);
     border-color: rgba(255, 50, 50, 0.95);
-    transform: scale(0.92);
-  }
-
-  #touch-pause {
-    display: none;
-    position: fixed;
-    top: 50px;
-    right: 12px;
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    font-size: 18px;
-    border: 2px solid rgba(255,255,255,0.3);
-    background: rgba(0,0,0,0.5);
-    color: rgba(255,255,255,0.7);
-    pointer-events: auto;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: none;
-    transition: background 0.1s;
-    align-items: center;
-    justify-content: center;
-    z-index: 110;
-  }
-
-  #touch-pause:active, #touch-pause.active {
-    background: rgba(255,255,255,0.2);
-    border-color: rgba(255,255,255,0.6);
-  }
-
-  #swipe-hint {
-    display: none;
-    position: fixed;
-    bottom: 115px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: rgba(255,255,255,0.2);
-    font-size: 10px;
-    font-family: 'Press Start 2P', monospace;
-    pointer-events: none;
-    z-index: 100;
-    text-align: center;
-    letter-spacing: 1px;
-    animation: swipeHintPulse 2s ease-in-out infinite;
-  }
-
-  @keyframes swipeHintPulse {
-    0%, 100% { opacity: 0.2; }
-    50% { opacity: 0.5; }
+    transform: scale(0.9);
   }
 
   @media (max-width: 850px), (pointer: coarse) {
@@ -409,14 +389,6 @@
     }
 
     #touch-controls {
-      display: block;
-    }
-
-    #touch-pause {
-      display: flex;
-    }
-
-    #swipe-hint {
       display: block;
     }
 
@@ -522,10 +494,11 @@
   </div>
 
   <div id="touch-controls">
-    <button class="touch-fire-btn" id="touch-fire">FIRE</button>
+    <div id="joystick-zone">
+      <div id="joystick-knob"></div>
+    </div>
+    <button id="touch-fire">FIRE</button>
   </div>
-  <button class="touch-pause-btn" id="touch-pause">⏸</button>
-  <div id="swipe-hint">← 滑动屏幕控制方向 →</div>
 </div>
 
 <script>
@@ -851,90 +824,113 @@ class BattleCity {
       fireEl.addEventListener('mouseleave', fireEnd);
     }
 
-    // Touch pause button - directly toggle game state
-    const pauseEl = document.getElementById('touch-pause');
-    if (pauseEl) {
-      const pauseToggle = (e) => {
+    // Joystick controls + double-tap pause
+    const jZone = document.getElementById('joystick-zone');
+    const jKnob = document.getElementById('joystick-knob');
+    const J_RADIUS = 40;
+    let jTouchId = null;
+    let lastTapTime = 0;
+
+    if (jZone) {
+      const clearDir = () => {
+        this.keys['w'] = false;
+        this.keys['s'] = false;
+        this.keys['a'] = false;
+        this.keys['d'] = false;
+      };
+
+      const setDirFromAngle = (angle) => {
+        let dir = 'a';
+        if (angle >= -45 && angle < 45) dir = 'd';
+        else if (angle >= 45 && angle < 135) dir = 's';
+        else if (angle >= -135 && angle < -45) dir = 'w';
+        clearDir();
+        this.keys[dir] = true;
+      };
+
+      const resetKnob = () => {
+        jKnob.style.transform = 'translate(-50%, -50%)';
+        clearDir();
+      };
+
+      jZone.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        pauseEl.classList.add('active');
-        if (this.state === STATE.PLAYING) {
-          this.state = STATE.PAUSED;
-        } else if (this.state === STATE.PAUSED) {
-          this.state = STATE.PLAYING;
+        const now = Date.now();
+        if (now - lastTapTime < 350) {
+          if (this.state === STATE.PLAYING) this.state = STATE.PAUSED;
+          else if (this.state === STATE.PAUSED) this.state = STATE.PLAYING;
+          sound.resume();
+          lastTapTime = 0;
+          return;
         }
+        lastTapTime = now;
+
+        const touch = e.changedTouches[0];
+        jTouchId = touch.identifier;
+        const rect = jZone.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = touch.clientX - cx;
+        const dy = touch.clientY - cy;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+        if (dist < 10) {
+          clearDir();
+        } else {
+          const clampedDist = Math.min(dist, J_RADIUS);
+          const kx = (clampedDist / dist) * dx;
+          const ky = (clampedDist / dist) * dy;
+          jKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+          setDirFromAngle(angle);
+        }
+
         sound.resume();
-      };
-      const pauseEnd = (e) => {
+      }, { passive: false });
+
+      jZone.addEventListener('touchmove', (e) => {
         e.preventDefault();
-        pauseEl.classList.remove('active');
-      };
-      pauseEl.addEventListener('touchstart', pauseToggle, { passive: false });
-      pauseEl.addEventListener('mousedown', pauseToggle);
-      pauseEl.addEventListener('touchend', pauseEnd, { passive: false });
-      pauseEl.addEventListener('touchcancel', pauseEnd, { passive: false });
-      pauseEl.addEventListener('mouseup', pauseEnd);
-      pauseEl.addEventListener('mouseleave', pauseEnd);
+        let touch = null;
+        for (const t of e.changedTouches) {
+          if (t.identifier === jTouchId) { touch = t; break; }
+        }
+        if (!touch) return;
+
+        const rect = jZone.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = touch.clientX - cx;
+        const dy = touch.clientY - cy;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const clampedDist = Math.min(dist, J_RADIUS);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+        const kx = (clampedDist / dist) * dx;
+        const ky = (clampedDist / dist) * dy;
+        jKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+
+        if (dist < 10) {
+          clearDir();
+        } else {
+          setDirFromAngle(angle);
+        }
+      }, { passive: false });
+
+      jZone.addEventListener('touchend', (e) => {
+        for (const t of e.changedTouches) {
+          if (t.identifier === jTouchId) {
+            jTouchId = null;
+            resetKnob();
+            break;
+          }
+        }
+      }, { passive: true });
+
+      jZone.addEventListener('touchcancel', () => {
+        jTouchId = null;
+        resetKnob();
+      }, { passive: true });
     }
-
-    // Swipe controls on canvas
-    let touchStartX = 0, touchStartY = 0;
-    let swipeActive = false;
-    const SWIPE_THRESHOLD = 15;
-
-    this.canvas.addEventListener('touchstart', (e) => {
-      if (e.target === this.canvas) {
-        const touch = e.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        swipeActive = true;
-      }
-    }, { passive: true });
-
-    this.canvas.addEventListener('touchmove', (e) => {
-      if (!swipeActive || this.state !== STATE.PLAYING) return;
-      e.preventDefault();
-      const touch = e.touches[0];
-      const dx = touch.clientX - touchStartX;
-      const dy = touch.clientY - touchStartY;
-
-      if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
-
-      this.keys['w'] = false;
-      this.keys['s'] = false;
-      this.keys['a'] = false;
-      this.keys['d'] = false;
-
-      if (Math.abs(dx) > Math.abs(dy)) {
-        if (dx > 0) this.keys['d'] = true;
-        else this.keys['a'] = true;
-      } else {
-        if (dy > 0) this.keys['s'] = true;
-        else this.keys['w'] = true;
-      }
-
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-    }, { passive: false });
-
-    this.canvas.addEventListener('touchend', () => {
-      if (swipeActive) {
-        this.keys['w'] = false;
-        this.keys['s'] = false;
-        this.keys['a'] = false;
-        this.keys['d'] = false;
-        swipeActive = false;
-      }
-    }, { passive: true });
-
-    this.canvas.addEventListener('touchcancel', () => {
-      if (swipeActive) {
-        this.keys['w'] = false;
-        this.keys['s'] = false;
-        this.keys['a'] = false;
-        this.keys['d'] = false;
-        swipeActive = false;
-      }
-    }, { passive: true });
   }
 
   resetLevel(level) {
