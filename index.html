@@ -299,7 +299,7 @@
     display: none;
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: 200px;
+    height: 100px;
     z-index: 100;
     pointer-events: none;
     padding: 10px 20px;
@@ -308,80 +308,82 @@
     touch-action: none;
   }
 
-  #touch-dpad {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    width: 150px;
-    height: 150px;
-    pointer-events: auto;
-  }
-
-  .touch-btn {
-    position: absolute;
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    border: 2px solid rgba(255,255,255,0.4);
-    background: rgba(255,255,255,0.15);
-    color: rgba(255,255,255,0.8);
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: none;
-    pointer-events: auto;
-    transition: background 0.1s;
-  }
-
-  .touch-btn:active, .touch-btn.active {
-    background: rgba(255,255,255,0.35);
-    border-color: rgba(255,255,255,0.7);
-  }
-
-  .touch-up    { top: 0; left: 50%; transform: translateX(-50%); }
-  .touch-down  { bottom: 0; left: 50%; transform: translateX(-50%); }
-  .touch-left  { left: 0; top: 50%; transform: translateY(-50%); }
-  .touch-right { right: 0; top: 50%; transform: translateY(-50%); }
-
-  #touch-actions {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    pointer-events: none;
-  }
-
   #touch-fire {
+    position: absolute;
+    bottom: 10px;
+    right: 20px;
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    font-size: 11px;
+    font-size: 12px;
     border: 3px solid rgba(255, 50, 50, 0.6);
     background: rgba(255, 50, 50, 0.2);
     color: #ff6b6b;
     pointer-events: auto;
-    position: relative;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    transition: background 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 1px;
+    font-family: 'Press Start 2P', monospace;
+    z-index: 110;
   }
 
   #touch-fire:active, #touch-fire.active {
-    background: rgba(255, 50, 50, 0.4);
-    border-color: rgba(255, 50, 50, 0.9);
+    background: rgba(255, 50, 50, 0.45);
+    border-color: rgba(255, 50, 50, 0.95);
+    transform: scale(0.92);
   }
 
   #touch-pause {
+    display: none;
+    position: fixed;
+    top: 50px;
+    right: 12px;
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    font-size: 16px;
+    font-size: 18px;
     border: 2px solid rgba(255,255,255,0.3);
-    background: rgba(0,0,0,0.3);
-    color: rgba(255,255,255,0.6);
+    background: rgba(0,0,0,0.5);
+    color: rgba(255,255,255,0.7);
     pointer-events: auto;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    transition: background 0.1s;
+    align-items: center;
+    justify-content: center;
+    z-index: 110;
+  }
+
+  #touch-pause:active, #touch-pause.active {
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.6);
+  }
+
+  #swipe-hint {
+    display: none;
+    position: fixed;
+    bottom: 115px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.2);
+    font-size: 10px;
+    font-family: 'Press Start 2P', monospace;
+    pointer-events: none;
+    z-index: 100;
+    text-align: center;
+    letter-spacing: 1px;
+    animation: swipeHintPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes swipeHintPulse {
+    0%, 100% { opacity: 0.2; }
+    50% { opacity: 0.5; }
   }
 
   @media (max-width: 850px), (pointer: coarse) {
@@ -407,6 +409,14 @@
     }
 
     #touch-controls {
+      display: block;
+    }
+
+    #touch-pause {
+      display: flex;
+    }
+
+    #swipe-hint {
       display: block;
     }
 
@@ -512,17 +522,10 @@
   </div>
 
   <div id="touch-controls">
-    <div id="touch-dpad">
-      <button class="touch-btn touch-up" data-dir="up">▲</button>
-      <button class="touch-btn touch-left" data-dir="left">◀</button>
-      <button class="touch-btn touch-right" data-dir="right">▶</button>
-      <button class="touch-btn touch-down" data-dir="down">▼</button>
-    </div>
-    <div id="touch-actions">
-      <button class="touch-btn touch-fire" id="touch-fire">FIRE</button>
-      <button class="touch-btn touch-pause" id="touch-pause">⏸</button>
-    </div>
+    <button class="touch-fire-btn" id="touch-fire">FIRE</button>
   </div>
+  <button class="touch-pause-btn" id="touch-pause">⏸</button>
+  <div id="swipe-hint">← 滑动屏幕控制方向 →</div>
 </div>
 
 <script>
@@ -797,7 +800,7 @@ class BattleCity {
     const isMobile = window.innerWidth <= 850 || 'ontouchstart' in window;
     if (isMobile) {
       const maxW = window.innerWidth - 16;
-      const maxH = window.innerHeight - 260;
+      const maxH = window.innerHeight - 160;
       const scale = Math.min(1, maxW / W, maxH / H);
       this.container.style.transform = 'scale(' + scale + ')';
       this.container.style.transformOrigin = 'top center';
@@ -826,59 +829,112 @@ class BattleCity {
     });
     document.addEventListener('keyup', (e) => { this.keys[e.key] = false; });
 
-    // Touch controls
-    const setupTouchBtn = (id, keyDown, keyUp) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      const start = (e) => {
+    // Touch fire button
+    const fireEl = document.getElementById('touch-fire');
+    if (fireEl) {
+      const fireStart = (e) => {
         e.preventDefault();
-        el.classList.add('active');
-        this.keys[keyDown] = true;
-        this.keys[keyUp] = false;
+        fireEl.classList.add('active');
+        this.keys['j'] = true;
         sound.resume();
       };
-      const end = (e) => {
+      const fireEnd = (e) => {
         e.preventDefault();
-        el.classList.remove('active');
-        this.keys[keyDown] = false;
+        fireEl.classList.remove('active');
+        this.keys['j'] = false;
       };
-      el.addEventListener('touchstart', start, { passive: false });
-      el.addEventListener('mousedown', start);
-      el.addEventListener('touchend', end, { passive: false });
-      el.addEventListener('touchcancel', end, { passive: false });
-      el.addEventListener('mouseup', end);
-      el.addEventListener('mouseleave', end);
-    };
+      fireEl.addEventListener('touchstart', fireStart, { passive: false });
+      fireEl.addEventListener('mousedown', fireStart);
+      fireEl.addEventListener('touchend', fireEnd, { passive: false });
+      fireEl.addEventListener('touchcancel', fireEnd, { passive: false });
+      fireEl.addEventListener('mouseup', fireEnd);
+      fireEl.addEventListener('mouseleave', fireEnd);
+    }
 
-    setupTouchBtn('touch-fire', 'j', 'j');
-    setupTouchBtn('touch-pause', 'p', 'p');
-
-    const setupDpadBtn = (sel, key) => {
-      const el = document.querySelector(sel);
-      if (!el) return;
-      const start = (e) => {
+    // Touch pause button - directly toggle game state
+    const pauseEl = document.getElementById('touch-pause');
+    if (pauseEl) {
+      const pauseToggle = (e) => {
         e.preventDefault();
-        el.classList.add('active');
-        this.keys[key] = true;
+        pauseEl.classList.add('active');
+        if (this.state === STATE.PLAYING) {
+          this.state = STATE.PAUSED;
+        } else if (this.state === STATE.PAUSED) {
+          this.state = STATE.PLAYING;
+        }
         sound.resume();
       };
-      const end = (e) => {
+      const pauseEnd = (e) => {
         e.preventDefault();
-        el.classList.remove('active');
-        this.keys[key] = false;
+        pauseEl.classList.remove('active');
       };
-      el.addEventListener('touchstart', start, { passive: false });
-      el.addEventListener('mousedown', start);
-      el.addEventListener('touchend', end, { passive: false });
-      el.addEventListener('touchcancel', end, { passive: false });
-      el.addEventListener('mouseup', end);
-      el.addEventListener('mouseleave', end);
-    };
+      pauseEl.addEventListener('touchstart', pauseToggle, { passive: false });
+      pauseEl.addEventListener('mousedown', pauseToggle);
+      pauseEl.addEventListener('touchend', pauseEnd, { passive: false });
+      pauseEl.addEventListener('touchcancel', pauseEnd, { passive: false });
+      pauseEl.addEventListener('mouseup', pauseEnd);
+      pauseEl.addEventListener('mouseleave', pauseEnd);
+    }
 
-    setupDpadBtn('.touch-up', 'w');
-    setupDpadBtn('.touch-down', 's');
-    setupDpadBtn('.touch-left', 'a');
-    setupDpadBtn('.touch-right', 'd');
+    // Swipe controls on canvas
+    let touchStartX = 0, touchStartY = 0;
+    let swipeActive = false;
+    const SWIPE_THRESHOLD = 15;
+
+    this.canvas.addEventListener('touchstart', (e) => {
+      if (e.target === this.canvas) {
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        swipeActive = true;
+      }
+    }, { passive: true });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      if (!swipeActive || this.state !== STATE.PLAYING) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+
+      if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
+
+      this.keys['w'] = false;
+      this.keys['s'] = false;
+      this.keys['a'] = false;
+      this.keys['d'] = false;
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0) this.keys['d'] = true;
+        else this.keys['a'] = true;
+      } else {
+        if (dy > 0) this.keys['s'] = true;
+        else this.keys['w'] = true;
+      }
+
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchend', () => {
+      if (swipeActive) {
+        this.keys['w'] = false;
+        this.keys['s'] = false;
+        this.keys['a'] = false;
+        this.keys['d'] = false;
+        swipeActive = false;
+      }
+    }, { passive: true });
+
+    this.canvas.addEventListener('touchcancel', () => {
+      if (swipeActive) {
+        this.keys['w'] = false;
+        this.keys['s'] = false;
+        this.keys['a'] = false;
+        this.keys['d'] = false;
+        swipeActive = false;
+      }
+    }, { passive: true });
   }
 
   resetLevel(level) {
