@@ -264,6 +264,33 @@
     color: #ff6b6b;
   }
 
+  .difficulty-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 360px;
+    padding: 0 10px;
+    margin-bottom: 20px;
+  }
+
+  .difficulty-btn {
+    min-width: 0;
+    width: 100%;
+    max-width: 300px;
+    margin: 0;
+  }
+
+  .difficulty-btn:hover {
+    border-color: #FFD700;
+    color: #FFD700;
+  }
+
+  .difficulty-btn .btn-key {
+    font-size: 9px;
+  }
+
   .p1-indicator {
     color: #FFD700;
     font-size: 8px;
@@ -455,10 +482,10 @@
       <div class="menu-title">坦克大战</div>
       <div class="menu-subtitle">BATTLE CITY</div>
 
-      <button class="menu-btn" onclick="startGame(1,false)">
+      <button class="menu-btn" onclick="showDifficultySelect(0,false)">
         <span class="btn-key">[1P]</span> 1 PLAYER
       </button>
-      <button class="menu-btn" onclick="startGame(1,true)">
+      <button class="menu-btn" onclick="showDifficultySelect(0,true)">
         <span class="btn-key">[2P]</span> 2 PLAYERS
       </button>
       <button class="menu-btn" onclick="showStageSelect()">
@@ -490,6 +517,22 @@
       <div id="stage-buttons" class="stage-buttons-grid"></div>
       <button class="stage-back-btn" onclick="backToMenu()">← BACK</button>
       <div class="p1-indicator">★ P1 SELECT</div>
+    </div>
+
+    <div id="difficulty-select" class="stage-select">
+      <div class="stage-select-title">选择难度</div>
+      <div class="difficulty-buttons">
+        <button class="menu-btn difficulty-btn" onclick="startWithDifficulty('easy')">
+          <span class="btn-key">[EASY]</span> 简单
+        </button>
+        <button class="menu-btn difficulty-btn" onclick="startWithDifficulty('medium')">
+          <span class="btn-key">[NORMAL]</span> 普通
+        </button>
+        <button class="menu-btn difficulty-btn" onclick="startWithDifficulty('hard')">
+          <span class="btn-key">[HARD]</span> 困难
+        </button>
+      </div>
+      <button class="stage-back-btn" onclick="backToMenu()">← BACK</button>
     </div>
   </div>
 
@@ -762,6 +805,7 @@ class BattleCity {
     this.timerItemActive = false;
     this.powerupIndicator = document.getElementById('powerup-indicator');
     this.container = document.getElementById('game-container');
+    this.difficulty = 'medium';
 
     this.handleResize = this.handleResize.bind(this);
     window.addEventListener('resize', this.handleResize);
@@ -790,17 +834,25 @@ class BattleCity {
 
   setupInput() {
     document.addEventListener('keydown', (e) => {
+      const key = e.key;
       const gameKeys = ['w','W','a','A','s','S','d','D','j','J','p','P',
         'ArrowUp','ArrowDown','ArrowLeft','ArrowRight','0',')'];
-      if (gameKeys.includes(e.key)) e.preventDefault();
-      this.keys[e.key] = true;
-      if (e.key === 'p' || e.key === 'P') {
+      if (gameKeys.includes(key)) e.preventDefault();
+      // Store both original and lowercase to handle Caps Lock / Shift
+      this.keys[key] = true;
+      if (key.length === 1) this.keys[key.toLowerCase()] = true;
+      const pk = key.toLowerCase();
+      if (pk === 'p') {
         if (this.state === STATE.PLAYING) this.state = STATE.PAUSED;
         else if (this.state === STATE.PAUSED) this.state = STATE.PLAYING;
       }
-      if (e.key === 'Enter' || e.key === ' ') sound.resume();
+      if (pk === 'enter' || key === ' ') sound.resume();
     });
-    document.addEventListener('keyup', (e) => { this.keys[e.key] = false; });
+    document.addEventListener('keyup', (e) => {
+      const key = e.key;
+      this.keys[key] = false;
+      if (key.length === 1) this.keys[key.toLowerCase()] = false;
+    });
 
     // Touch fire button
     const fireEl = document.getElementById('touch-fire');
@@ -947,35 +999,37 @@ class BattleCity {
     this.powerups = [];
     this.enemies = [];
     this.enemiesSpawned = 0;
-    this.totalEnemies = src.totalEnemies || 20;
-    this.enemySpawnTimer = 30;
+    const baseTotal = src.totalEnemies || 20;
+    this.totalEnemies = this.difficulty === 'easy' ? Math.max(10, baseTotal - 4) : this.difficulty === 'hard' ? baseTotal + 8 : baseTotal;
+    this.maxEnemies = this.difficulty === 'easy' ? 3 : this.difficulty === 'hard' ? 6 : 4;
+    this.enemySpawnTimer = this.difficulty === 'easy' ? 80 : this.difficulty === 'hard' ? 30 : 60;
     this.powerupTimer = 200;
     this.spawnAnimations = [];
     this.freezeTimer = 0;
     this.hornTimer = 0;
     this.timerItemActive = false;
     this.powerupIndicator.style.display = 'none';
-
     this.player1 = new Tank(8 * CELL + 1, 24 * CELL + 1, DIR.UP, true, 0);
-    this.player1.speed = 2;
+    this.player1.speed = this.difficulty === 'easy' ? 2.5 : this.difficulty === 'hard' ? 1.5 : 2;
     if (this.doubleMode) {
       this.player2 = new Tank(17 * CELL + 1, 24 * CELL + 1, DIR.UP, true, 1);
-      this.player2.speed = 2;
+      this.player2.speed = this.difficulty === 'easy' ? 2.5 : this.difficulty === 'hard' ? 1.5 : 2;
     }
 
-    this.lives = 3;
     this.state = STATE.PLAYING;
   }
 
-  start(level, doubleMode) {
+  start(level, doubleMode, difficulty) {
     this.doubleMode = doubleMode;
+    this.difficulty = difficulty || 'medium';
     this.score = 0;
-    this.lives = 3;
+    this.lives = this.difficulty === 'easy' ? 5 : this.difficulty === 'hard' ? 2 : 3;
     this.resetLevel(level);
     document.getElementById('menu-overlay').style.display = 'none';
     document.getElementById('gameover-overlay').style.display = 'none';
     document.getElementById('level-complete-overlay').style.display = 'none';
     document.getElementById('stage-select').style.display = 'none';
+    document.getElementById('difficulty-select').style.display = 'none';
     this.lastTime = performance.now();
   }
 
@@ -1138,11 +1192,16 @@ class BattleCity {
       if (!this.isSpawnClear(ex, ey)) { this.enemySpawnTimer = 5; return; }
 
       const lvl = Math.min(this.level, 4);
+      const diff = this.difficulty;
+      const diffMod = diff === 'easy' ? -0.08 : diff === 'hard' ? 0.08 : 0;
+      const speedMul = diff === 'easy' ? 0.6 : diff === 'hard' ? 1.3 : 1.0;
       const roll = Math.random();
       let typeData;
-      if (roll < 0.25 + lvl * 0.03) typeData = { type: ENEMY_TYPE.NORMAL, speed: 1.0, hp: 2, color: '#C0C0C0', trackColor: '#888', barrelColor: '#aaa', score: 150, bodySize: 26 };
-      else if (roll < 0.5 + lvl * 0.04) typeData = { type: ENEMY_TYPE.ARMOR, speed: 0.6, hp: 3, color: '#8B0000', trackColor: '#555', barrelColor: '#666', score: 300, bodySize: 28 };
-      else typeData = { type: ENEMY_TYPE.FAST, speed: 2.5, hp: 1, color: '#DAA520', trackColor: '#B8860B', barrelColor: '#B8860B', score: 200, bodySize: 24 };
+      const nChance = 0.25 + lvl * 0.03 + diffMod;
+      const aChance = 0.5 + lvl * 0.04 + diffMod;
+      if (roll < nChance) typeData = { type: ENEMY_TYPE.NORMAL, speed: 1.0 * speedMul, hp: diff === 'hard' ? 3 : 2, color: '#C0C0C0', trackColor: '#888', barrelColor: '#aaa', score: 150, bodySize: 26 };
+      else if (roll < aChance) typeData = { type: ENEMY_TYPE.ARMOR, speed: 0.6 * speedMul, hp: diff === 'hard' ? 4 : diff === 'easy' ? 2 : 3, color: '#8B0000', trackColor: '#555', barrelColor: '#666', score: 300, bodySize: 28 };
+      else typeData = { type: ENEMY_TYPE.FAST, speed: 2.5 * speedMul, hp: diff === 'hard' ? 2 : 1, color: '#DAA520', trackColor: '#B8860B', barrelColor: '#B8860B', score: 200, bodySize: 24 };
 
       const enemy = new Tank(ex + 1, ey + 1, DIR.DOWN, false, typeData);
       this.enemies.push(enemy);
@@ -1883,9 +1942,9 @@ function initGame() {
   if (!game) { game = new BattleCity(); sound.init(); }
 }
 
-function startGame(level, doubleMode) {
+function startGame(level, doubleMode, difficulty) {
   initGame();
-  game.start(level - 1, !!doubleMode);
+  game.start(level - 1, !!doubleMode, difficulty);
 }
 
 function showStageSelect() {
@@ -1898,19 +1957,37 @@ function showStageSelect() {
     const themeName = THEMES[LEVELS[i-1].theme].name;
     btn.innerHTML = '<div class="stage-num">STAGE ' + i + '</div><div class="stage-theme">' + themeName + '</div>';
     const stageIdx = i - 1;
-    btn.onclick = function() { startGame(stageIdx + 1, false); };
+    btn.onclick = function() { showDifficultySelect(stageIdx, false); };
     container.appendChild(btn);
   }
   document.getElementById('stage-select').style.display = 'flex';
   document.getElementById('menu-overlay').style.display = 'none';
 }
 
+let pendingGameConfig = null;
+
+function showDifficultySelect(level, doubleMode) {
+  pendingGameConfig = { level, doubleMode };
+  document.getElementById('difficulty-select').style.display = 'flex';
+  document.getElementById('menu-overlay').style.display = 'none';
+  document.getElementById('stage-select').style.display = 'none';
+}
+
+function startWithDifficulty(difficulty) {
+  if (pendingGameConfig) {
+    startGame(pendingGameConfig.level + 1, pendingGameConfig.doubleMode, difficulty);
+    pendingGameConfig = null;
+  }
+}
+
 function backToMenu() {
   if (game) game.state = STATE.MENU;
+  pendingGameConfig = null;
   document.getElementById('menu-overlay').style.display = 'flex';
   document.getElementById('gameover-overlay').style.display = 'none';
   document.getElementById('level-complete-overlay').style.display = 'none';
   document.getElementById('stage-select').style.display = 'none';
+  document.getElementById('difficulty-select').style.display = 'none';
 }
 
 function nextLevel() {
