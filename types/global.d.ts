@@ -1,5 +1,8 @@
 /// <reference types="@tarojs/taro" />
 
+/** 微信小游戏全局对象（仅在 Taro 未提供类型声明时兜底） */
+declare const wx: any;
+
 declare module '*.png';
 declare module '*.gif';
 declare module '*.jpg';

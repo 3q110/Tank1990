@@ -30,10 +30,6 @@ function setRowRange(grid: number[][], r: number, cStart: number, cEnd: number, 
   for (let c = cStart; c <= cEnd; c++) setCell(grid, r, c, val);
 }
 
-function setColRange(grid: number[][], c: number, rStart: number, rEnd: number, val: number) {
-  for (let r = rStart; r <= rEnd; r++) setCell(grid, r, c, val);
-}
-
 export interface LevelDef {
   map: number[][];
   theme: number;

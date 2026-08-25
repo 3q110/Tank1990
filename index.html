@@ -9,7 +9,11 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    background: #0a0a0a;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(255, 215, 0, 0.10), transparent 60%),
+      radial-gradient(900px 500px at 85% 110%, rgba(231, 76, 60, 0.08), transparent 55%),
+      linear-gradient(180deg, #0b0b12 0%, #0a0a0a 40%, #050505 100%);
+    background-attachment: fixed;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -19,12 +23,30 @@
     user-select: none;
   }
 
+  /* Subtle animated scanline overlay for retro feel */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.02) 0px,
+      rgba(255,255,255,0.02) 1px,
+      transparent 2px,
+      transparent 4px
+    );
+    z-index: 1;
+    opacity: 0.5;
+  }
+
   #game-wrapper {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
+    z-index: 2;
   }
 
   #hud {
@@ -33,18 +55,20 @@
     align-items: center;
     width: 840px;
     padding: 8px 16px;
-    background: #1a1a2e;
-    border: 3px solid #333;
-    border-radius: 4px;
+    background: linear-gradient(180deg, rgba(30,30,55,0.95) 0%, rgba(15,15,30,0.95) 100%);
+    border: 2px solid rgba(255, 215, 0, 0.35);
+    border-radius: 8px;
     color: #fff;
     font-size: 10px;
     letter-spacing: 1px;
+    box-shadow: 0 0 22px rgba(255, 215, 0, 0.12), inset 0 0 18px rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
   }
 
   #hud .hud-left, #hud .hud-right {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 18px;
   }
 
   .hud-item {
@@ -53,8 +77,31 @@
     gap: 6px;
   }
 
-  .hud-item .label { color: #888; }
-  .hud-item .value { color: #FFD700; }
+  .hud-item .label {
+    color: #9aa;
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+  .hud-item .value {
+    color: #FFD700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    font-size: 11px;
+  }
+
+  .hud-mute {
+    font-family: inherit;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1;
+    padding: 5px 8px;
+    cursor: pointer;
+    color: #fff;
+    transition: all 0.15s ease;
+  }
+  .hud-mute:hover { border-color: #FFD700; background: rgba(255,215,0,0.12); }
+  .hud-mute.muted { opacity: 0.5; }
 
   .hud-enemy-icon {
     width: 12px; height: 12px;
@@ -72,15 +119,20 @@
 
   #game-container {
     position: relative;
-    border: 4px solid #333;
-    border-radius: 4px;
-    box-shadow: 0 0 40px rgba(255, 215, 0, 0.15), inset 0 0 20px rgba(0,0,0,0.5);
+    border: 3px solid rgba(255, 215, 0, 0.25);
+    border-radius: 8px;
+    box-shadow:
+      0 0 50px rgba(255, 215, 0, 0.18),
+      0 0 120px rgba(231, 76, 60, 0.08),
+      inset 0 0 20px rgba(0,0,0,0.5);
+    background: #0a0a0a;
   }
 
   #gameCanvas {
     display: block;
     background: #111;
     image-rendering: pixelated;
+    border-radius: 6px;
   }
 
   #menu-overlay, #gameover-overlay, #level-complete-overlay {
@@ -93,10 +145,13 @@
     align-items: center;
     background: rgba(0, 0, 0, 0.85);
     z-index: 10;
+    backdrop-filter: blur(3px);
   }
 
   #menu-overlay {
-    background: linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(10,10,30,0.95) 100%);
+    background:
+      radial-gradient(700px 400px at 50% 30%, rgba(255, 215, 0, 0.10), transparent 70%),
+      linear-gradient(180deg, rgba(5,5,15,0.94) 0%, rgba(12,10,30,0.96) 100%);
   }
 
   #gameover-overlay, #level-complete-overlay { display: none; }
@@ -104,17 +159,17 @@
   .menu-title {
     font-size: 32px;
     color: #FFD700;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 4px 0 #8B6914;
-    margin-bottom: 8px;
-    letter-spacing: 4px;
-    animation: titlePulse 1.5s ease-in-out infinite;
+    text-shadow: 0 0 14px rgba(255, 215, 0, 0.55), 0 0 30px rgba(255,140,0,0.25), 0 4px 0 #8B6914;
+    margin-bottom: 10px;
+    letter-spacing: 5px;
+    animation: titlePulse 2s ease-in-out infinite;
   }
 
   .menu-subtitle {
     font-size: 10px;
-    color: #666;
+    color: #889;
     margin-bottom: 50px;
-    letter-spacing: 2px;
+    letter-spacing: 4px;
   }
 
   @keyframes titlePulse {
@@ -125,26 +180,58 @@
   .menu-btn {
     font-family: 'Press Start 2P', monospace;
     font-size: 14px;
-    color: #fff;
-    background: transparent;
-    border: 3px solid #444;
-    padding: 14px 40px;
-    margin: 8px;
+    color: #dfe6ff;
+    background: linear-gradient(180deg, rgba(40,40,70,0.6) 0%, rgba(20,20,40,0.7) 100%);
+    border: 2px solid rgba(120,120,160,0.4);
+    border-radius: 8px;
+    padding: 15px 36px;
+    margin: 9px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
     min-width: 300px;
     text-align: center;
     letter-spacing: 2px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .menu-btn::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -120%;
+    width: 60%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.14), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.5s ease;
   }
 
   .menu-btn:hover {
     border-color: #FFD700;
     color: #FFD700;
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 0 24px rgba(255, 215, 0, 0.28), 0 6px 18px rgba(0,0,0,0.5);
+    background: linear-gradient(180deg, rgba(60,55,30,0.7) 0%, rgba(35,30,18,0.8) 100%);
   }
+  .menu-btn:hover::after { left: 130%; }
+  .menu-btn:active { transform: translateY(0) scale(0.99); }
 
-  .menu-btn:active { transform: scale(0.98); }
+  .campaign-toggle {
+    margin-top: 22px;
+    padding: 10px 14px;
+    background: rgba(255, 215, 0, 0.08);
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    border-radius: 4px;
+    color: #FFD700;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    letter-spacing: 1px;
+  }
+  .campaign-toggle input { accent-color: #FFD700; width: 16px; height: 16px; cursor: pointer; }
 
   .menu-btn .btn-key {
     display: inline-block;
@@ -166,28 +253,38 @@
   .controls-info span { color: #888; }
 
   .gameover-title {
-    font-size: 28px;
-    color: #e74c3c;
-    text-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
-    margin-bottom: 20px;
-    letter-spacing: 3px;
+    font-size: 30px;
+    color: #ff5252;
+    text-shadow: 0 0 18px rgba(231, 76, 60, 0.7), 0 0 40px rgba(231,76,60,0.3);
+    margin-bottom: 22px;
+    letter-spacing: 4px;
+    animation: goPulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes goPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
   }
 
   .level-complete-title {
-    font-size: 20px;
-    color: #2ecc71;
-    text-shadow: 0 0 15px rgba(46, 204, 113, 0.5);
-    margin-bottom: 20px;
-    letter-spacing: 3px;
+    font-size: 22px;
+    color: #4dff88;
+    text-shadow: 0 0 18px rgba(46, 204, 113, 0.7), 0 0 40px rgba(46,204,113,0.3);
+    margin-bottom: 22px;
+    letter-spacing: 4px;
   }
 
   .result-score {
-    color: #fff;
+    color: #cfd6ff;
     font-size: 12px;
-    margin: 10px 0;
+    margin: 12px 0;
+    letter-spacing: 1px;
   }
 
-  .result-score .score-val { color: #FFD700; }
+  .result-score .score-val {
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255,215,0,0.5);
+  }
 
   .stage-select {
     position: absolute;
@@ -336,61 +433,100 @@
 
   #joystick-zone {
     position: absolute;
-    bottom: 15px;
-    left: 30px;
-    width: 130px;
-    height: 130px;
+    bottom: 20px;
+    left: 24px;
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.08);
-    border: 2px solid rgba(255,255,255,0.15);
+    background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 60%, rgba(255,255,255,0.02) 100%);
+    border: 2px solid rgba(255,215,0,0.35);
+    box-shadow: inset 0 0 26px rgba(0,0,0,0.5), 0 0 20px rgba(255,215,0,0.10);
     pointer-events: auto;
     touch-action: none;
     z-index: 105;
   }
 
+  .joy-arrow {
+    position: absolute;
+    color: rgba(255,215,0,0.45);
+    font-size: 13px;
+    pointer-events: none;
+  }
+  .joy-arrow.up { top: 8px; left: 50%; transform: translateX(-50%); }
+  .joy-arrow.down { bottom: 8px; left: 50%; transform: translateX(-50%); }
+  .joy-arrow.left { left: 10px; top: 50%; transform: translateY(-50%); }
+  .joy-arrow.right { right: 10px; top: 50%; transform: translateY(-50%); }
+
   #joystick-knob {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 50px;
-    height: 50px;
+    width: 62px;
+    height: 62px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.2);
-    border: 2px solid rgba(255,255,255,0.3);
+    background: radial-gradient(circle at 40% 35%, rgba(255,235,150,0.95) 0%, rgba(255,215,0,0.85) 55%, rgba(184,134,11,0.85) 100%);
+    border: 2px solid rgba(255,240,180,0.8);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.5), 0 0 16px rgba(255,215,0,0.35);
     transform: translate(-50%, -50%);
     pointer-events: none;
     transition: none;
     z-index: 106;
   }
 
-  #touch-fire {
+  #touch-pause {
     position: absolute;
-    bottom: 30px;
-    right: 30px;
-    width: 80px;
-    height: 80px;
+    bottom: 108px;
+    right: 40px;
+    width: 54px;
+    height: 54px;
     border-radius: 50%;
-    font-size: 13px;
-    border: 3px solid rgba(255, 50, 50, 0.6);
-    background: rgba(255, 50, 50, 0.2);
-    color: #ff6b6b;
+    font-size: 16px;
+    border: 2px solid rgba(255,215,0,0.45);
+    background: rgba(255,215,0,0.12);
+    color: #FFD700;
     pointer-events: auto;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
-    transition: background 0.08s, transform 0.08s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', monospace;
+    z-index: 112;
+    transition: transform 0.08s, background 0.08s;
+  }
+  #touch-pause:active { transform: scale(0.92); background: rgba(255,215,0,0.28); }
+
+  #touch-fire {
+    position: absolute;
+    bottom: 26px;
+    right: 28px;
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    font-size: 14px;
+    border: 3px solid rgba(255, 80, 80, 0.75);
+    background: radial-gradient(circle at 40% 35%, rgba(255,120,120,0.4) 0%, rgba(255,50,50,0.28) 60%, rgba(200,30,30,0.22) 100%);
+    color: #ffb3b3;
+    pointer-events: auto;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    transition: background 0.08s, transform 0.08s, box-shadow 0.08s;
     display: flex;
     align-items: center;
     justify-content: center;
     letter-spacing: 1px;
     font-family: 'Press Start 2P', monospace;
+    box-shadow: 0 0 22px rgba(255,60,60,0.25);
     z-index: 110;
   }
 
   #touch-fire:active, #touch-fire.active {
-    background: rgba(255, 50, 50, 0.45);
-    border-color: rgba(255, 50, 50, 0.95);
-    transform: scale(0.9);
+    background: radial-gradient(circle at 40% 35%, rgba(255,160,160,0.6) 0%, rgba(255,70,70,0.5) 60%, rgba(230,40,40,0.45) 100%);
+    border-color: rgba(255, 120, 120, 0.98);
+    transform: scale(0.92);
+    box-shadow: 0 0 30px rgba(255,80,80,0.5);
   }
 
   @media (max-width: 850px), (pointer: coarse) {
@@ -471,6 +607,9 @@
         <span class="hud-enemy-icon"></span>
         <span class="value" id="enemies-display">20</span>
       </div>
+      <div class="hud-item">
+        <button id="mute-btn" class="hud-mute" title="Mute (M)">🔊</button>
+      </div>
     </div>
   </div>
 
@@ -532,6 +671,10 @@
           <span class="btn-key">[HARD]</span> 困难
         </button>
       </div>
+      <label class="campaign-toggle">
+        <input type="checkbox" id="campaign-toggle" checked />
+        单人闯关模式（生命/洋枪跨关保留，从当前关连续打到最后一关）
+      </label>
       <button class="stage-back-btn" onclick="backToMenu()">← BACK</button>
     </div>
   </div>
@@ -539,7 +682,12 @@
   <div id="touch-controls">
     <div id="joystick-zone">
       <div id="joystick-knob"></div>
+      <span class="joy-arrow up">▲</span>
+      <span class="joy-arrow down">▼</span>
+      <span class="joy-arrow left">◀</span>
+      <span class="joy-arrow right">▶</span>
     </div>
+    <button id="touch-pause" title="Pause">❚❚</button>
     <button id="touch-fire">FIRE</button>
   </div>
 </div>
@@ -635,15 +783,36 @@ const desertTile = 0;
 // ============================================================
 // SOUND ENGINE
 // ============================================================
+// ============================================================
+// SOUND ENGINE — layered Web Audio synthesis
+// Master gain + compressor, noise buffers, per-sound layering.
+// ============================================================
 class SoundEngine {
   constructor() {
     this.ctx = null;
     this.enabled = true;
+    this.master = null;
+    this.noiseBuf = null;
+    this.muted = false;
   }
 
   init() {
+    if (this.ctx) return;
     try {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const AC = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AC();
+      // Master gain -> compressor -> destination (prevents clipping when many SFX overlap)
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.muted ? 0 : 0.9;
+      const comp = this.ctx.createDynamicsCompressor();
+      comp.threshold.value = -18; comp.knee.value = 24;
+      comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.2;
+      this.master.connect(comp); comp.connect(this.ctx.destination);
+      // Pre-render a reusable 1.2s white-noise buffer
+      const len = Math.floor(this.ctx.sampleRate * 1.2);
+      this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const d = this.noiseBuf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     } catch (e) {
       this.enabled = false;
     }
@@ -653,116 +822,117 @@ class SoundEngine {
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
   }
 
-  play(type) {
-    if (!this.enabled || !this.ctx) return;
-    this.resume();
-    switch (type) {
-      case 'shoot': this._shoot(); break;
-      case 'explosion': this._explosion(); break;
-      case 'hit': this._hit(); break;
-      case 'powerup': this._powerup(); break;
-      case 'gameover': this._gameover(); break;
-      case 'levelUp': this._levelUp(); break;
-      case 'move': this._move(); break;
-      case 'superShoot': this._superShoot(); break;
-      case 'freeze': this._freeze(); break;
+  setMuted(m) {
+    this.muted = !!m;
+    if (this.master && this.ctx) {
+      this.master.gain.cancelScheduledValues(this.ctx.currentTime);
+      this.master.gain.linearRampToValueAtTime(m ? 0 : 0.9, this.ctx.currentTime + 0.05);
     }
   }
 
+  play(type) {
+    if (!this.enabled || !this.ctx || this.muted) return;
+    this.resume();
+    const fn = this['_' + type];
+    if (fn) fn.call(this);
+  }
+
+  // --- low-level helpers -------------------------------------------------
+  _tone({ type = 'square', freq = 440, freqEnd = null, start = 0, dur = 0.1, vol = 0.1, filter = null, filterFreq = null }) {
+    const t0 = this.ctx.currentTime + start;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    if (freqEnd) o.frequency.exponentialRampToValueAtTime(Math.max(1, freqEnd), t0 + dur);
+    let node = o;
+    if (filter) {
+      const f = this.ctx.createBiquadFilter();
+      f.type = filter; if (filterFreq) f.frequency.value = filterFreq;
+      o.connect(f); node = f;
+    }
+    node.connect(g); g.connect(this.master);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+
+  _noise({ start = 0, dur = 0.3, vol = 0.2, filter = 'lowpass', filterFreq = 800, sweepTo = null }) {
+    const t0 = this.ctx.currentTime + start;
+    const s = this.ctx.createBufferSource();
+    s.buffer = this.noiseBuf; s.loop = false;
+    const f = this.ctx.createBiquadFilter();
+    f.type = filter; f.frequency.setValueAtTime(filterFreq, t0);
+    if (sweepTo) f.frequency.exponentialRampToValueAtTime(Math.max(20, sweepTo), t0 + dur);
+    const g = this.ctx.createGain();
+    s.connect(f); f.connect(g); g.connect(this.master);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    s.start(t0); s.stop(t0 + dur + 0.05);
+  }
+
+  // --- individual sounds -------------------------------------------------
   _shoot() {
-    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-    o.connect(g); g.connect(this.ctx.destination);
-    o.type = 'square'; o.frequency.setValueAtTime(800, this.ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.08);
-    g.gain.setValueAtTime(0.1, this.ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
-    o.start(); o.stop(this.ctx.currentTime + 0.08);
+    this._tone({ type: 'square', freq: 900, freqEnd: 180, dur: 0.09, vol: 0.11 });
+    this._noise({ dur: 0.05, vol: 0.05, filter: 'highpass', filterFreq: 2500 });
   }
 
   _superShoot() {
-    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-    o.connect(g); g.connect(this.ctx.destination);
-    o.type = 'sawtooth'; o.frequency.setValueAtTime(1200, this.ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.12);
-    g.gain.setValueAtTime(0.12, this.ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
-    o.start(); o.stop(this.ctx.currentTime + 0.12);
+    this._tone({ type: 'sawtooth', freq: 1400, freqEnd: 320, dur: 0.13, vol: 0.12 });
+    this._tone({ type: 'square', freq: 2100, freqEnd: 700, dur: 0.09, vol: 0.06 });
+    this._noise({ dur: 0.08, vol: 0.06, filter: 'bandpass', filterFreq: 3000 });
   }
 
   _explosion() {
-    const bf = this.ctx.sampleRate * 0.3;
-    const b = this.ctx.createBuffer(1, bf, this.ctx.sampleRate);
-    const d = b.getChannelData(0);
-    for (let i = 0; i < bf; i++) d[i] = (Math.random()*2-1) * Math.max(0, 1 - i/bf);
-    const s = this.ctx.createBufferSource(), g = this.ctx.createGain();
-    s.buffer = b; s.connect(g); g.connect(this.ctx.destination);
-    g.gain.setValueAtTime(0.15, this.ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-    s.start();
+    this._noise({ dur: 0.45, vol: 0.4, filter: 'lowpass', filterFreq: 1200, sweepTo: 120 });
+    this._tone({ type: 'sine', freq: 120, freqEnd: 40, dur: 0.4, vol: 0.3 });
+    this._tone({ type: 'triangle', freq: 60, freqEnd: 30, dur: 0.5, vol: 0.18 });
   }
 
   _hit() {
-    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-    o.connect(g); g.connect(this.ctx.destination);
-    o.type = 'sawtooth'; o.frequency.setValueAtTime(400, this.ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
-    g.gain.setValueAtTime(0.08, this.ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
-    o.start(); o.stop(this.ctx.currentTime + 0.1);
+    this._tone({ type: 'sawtooth', freq: 500, freqEnd: 120, dur: 0.09, vol: 0.09 });
+    this._noise({ dur: 0.05, vol: 0.05, filter: 'lowpass', filterFreq: 2000 });
   }
 
   _powerup() {
-    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-    o.connect(g); g.connect(this.ctx.destination);
-    o.type = 'sine';
-    o.frequency.setValueAtTime(400, this.ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.3);
-    g.gain.setValueAtTime(0.08, this.ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
-    o.start(); o.stop(this.ctx.currentTime + 0.35);
+    this._tone({ type: 'sine', freq: 500, freqEnd: 1600, dur: 0.28, vol: 0.08 });
+    this._tone({ type: 'square', freq: 700, freqEnd: 2000, dur: 0.28, vol: 0.04, start: 0.02 });
+    this._tone({ type: 'sine', freq: 1600, freqEnd: 2400, dur: 0.18, vol: 0.05, start: 0.18 });
   }
 
   _gameover() {
-    [400,350,300,200].forEach((f,i)=>{
-      const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-      o.connect(g); g.connect(this.ctx.destination);
-      o.type = 'square'; o.frequency.setValueAtTime(f, this.ctx.currentTime+i*0.2);
-      g.gain.setValueAtTime(0.08, this.ctx.currentTime+i*0.2);
-      g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime+i*0.2+0.15);
-      o.start(this.ctx.currentTime+i*0.2); o.stop(this.ctx.currentTime+i*0.2+0.15);
+    [392, 330, 262, 196].forEach((f, i) => {
+      this._tone({ type: 'square', freq: f, dur: 0.22, vol: 0.1, start: i * 0.22 });
+      this._tone({ type: 'sawtooth', freq: f / 2, dur: 0.22, vol: 0.05, start: i * 0.22 });
     });
   }
 
   _levelUp() {
-    [500,600,700,900].forEach((f,i)=>{
-      const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-      o.connect(g); g.connect(this.ctx.destination);
-      o.type = 'sine'; o.frequency.setValueAtTime(f, this.ctx.currentTime+i*0.1);
-      g.gain.setValueAtTime(0.06, this.ctx.currentTime+i*0.1);
-      g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime+i*0.1+0.1);
-      o.start(this.ctx.currentTime+i*0.1); o.stop(this.ctx.currentTime+i*0.1+0.1);
+    [523, 659, 784, 1047, 1319].forEach((f, i) => {
+      this._tone({ type: 'sine', freq: f, dur: 0.14, vol: 0.08, start: i * 0.09 });
+      this._tone({ type: 'triangle', freq: f * 1.5, dur: 0.1, vol: 0.03, start: i * 0.09 });
     });
   }
 
   _move() {
     if (Math.random() > 0.1) return;
-    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-    o.connect(g); g.connect(this.ctx.destination);
-    o.type = 'triangle'; o.frequency.setValueAtTime(100, this.ctx.currentTime);
-    g.gain.setValueAtTime(0.02, this.ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
-    o.start(); o.stop(this.ctx.currentTime + 0.05);
+    this._tone({ type: 'triangle', freq: 120, dur: 0.04, vol: 0.02 });
   }
 
   _freeze() {
-    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-    o.connect(g); g.connect(this.ctx.destination);
-    o.type = 'sine'; o.frequency.setValueAtTime(600, this.ctx.currentTime);
-    o.frequency.setValueAtTime(200, this.ctx.currentTime + 0.3);
-    o.frequency.setValueAtTime(600, this.ctx.currentTime + 0.6);
-    g.gain.setValueAtTime(0.06, this.ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.8);
-    o.start(); o.stop(this.ctx.currentTime + 0.8);
+    this._tone({ type: 'sine', freq: 700, freqEnd: 250, dur: 0.5, vol: 0.07 });
+    this._tone({ type: 'sine', freq: 1000, freqEnd: 400, dur: 0.6, vol: 0.04, start: 0.1 });
+    this._noise({ dur: 0.4, vol: 0.03, filter: 'highpass', filterFreq: 4000 });
+  }
+
+  _spawn() {
+    this._tone({ type: 'square', freq: 200, freqEnd: 800, dur: 0.15, vol: 0.05 });
+  }
+
+  _select() {
+    this._tone({ type: 'square', freq: 660, dur: 0.05, vol: 0.06 });
   }
 }
 
@@ -799,6 +969,7 @@ class BattleCity {
     this.powerupTimer = 0;
     this.powerupInterval = 400;
     this.spawnAnimations = [];
+    this.shakeX = 0; this.shakeY = 0; this.shakeT = 0; this.shakeMax = 1; this.shakeAmp = 0; this.acc = 0;
 
     this.freezeTimer = 0;
     this.hornTimer = 0;
@@ -806,6 +977,11 @@ class BattleCity {
     this.powerupIndicator = document.getElementById('powerup-indicator');
     this.container = document.getElementById('game-container');
     this.difficulty = 'medium';
+    this.campaignMode = true;        // 单人闯关模式（默认开启）
+    this.campaignScore = 0;          // 跨关累计分数
+    this.campaignLives = 3;          // 跨关保留生命
+    this.campaignP1Super = false;    // 跨关保留 P1 洋枪
+    this.campaignP2Super = false;    // 跨关保留 P2 洋枪
 
     this.handleResize = this.handleResize.bind(this);
     window.addEventListener('resize', this.handleResize);
@@ -829,13 +1005,44 @@ class BattleCity {
   init() {
     this.setupInput();
     this.handleResize();
+    this.bindMuteButton();
+    this.bindPauseButton();
     this.gameLoop(performance.now());
+  }
+
+  toggleMute() {
+    sound.init();
+    const next = !sound.muted;
+    sound.setMuted(next);
+    const btn = document.getElementById('mute-btn');
+    if (btn) btn.textContent = next ? '🔇' : '🔊';
+    btn && btn.classList.toggle('muted', next);
+  }
+
+  bindMuteButton() {
+    const btn = document.getElementById('mute-btn');
+    if (btn) {
+      btn.addEventListener('click', () => { sound.init(); this.toggleMute(); });
+    }
+  }
+
+  bindPauseButton() {
+    const btn = document.getElementById('touch-pause');
+    if (!btn) return;
+    const toggle = (e) => {
+      e.preventDefault();
+      if (this.state === STATE.PLAYING) this.state = STATE.PAUSED;
+      else if (this.state === STATE.PAUSED) this.state = STATE.PLAYING;
+      sound.resume();
+    };
+    btn.addEventListener('touchstart', toggle, { passive: false });
+    btn.addEventListener('mousedown', toggle);
   }
 
   setupInput() {
     document.addEventListener('keydown', (e) => {
       const key = e.key;
-      const gameKeys = ['w','W','a','A','s','S','d','D','j','J','p','P',
+      const gameKeys = ['w','W','a','A','s','S','d','D','j','J','p','P','m','M',
         'ArrowUp','ArrowDown','ArrowLeft','ArrowRight','0',')'];
       if (gameKeys.includes(key)) e.preventDefault();
       // Store both original and lowercase to handle Caps Lock / Shift
@@ -846,6 +1053,7 @@ class BattleCity {
         if (this.state === STATE.PLAYING) this.state = STATE.PAUSED;
         else if (this.state === STATE.PAUSED) this.state = STATE.PLAYING;
       }
+      if (pk === 'm') this.toggleMute();
       if (pk === 'enter' || key === ' ') sound.resume();
     });
     document.addEventListener('keyup', (e) => {
@@ -876,12 +1084,14 @@ class BattleCity {
       fireEl.addEventListener('mouseleave', fireEnd);
     }
 
-    // Joystick controls + double-tap pause
+    // Joystick controls (axis-based, low dead-zone, generous touch target)
     const jZone = document.getElementById('joystick-zone');
     const jKnob = document.getElementById('joystick-knob');
-    const J_RADIUS = 40;
+    const J_RADIUS = 45;
+    const DEAD = 8;
     let jTouchId = null;
     let lastTapTime = 0;
+    let lastDir = '';
 
     if (jZone) {
       const clearDir = () => {
@@ -891,83 +1101,70 @@ class BattleCity {
         this.keys['d'] = false;
       };
 
-      const setDirFromAngle = (angle) => {
-        let dir = 'a';
-        if (angle >= -45 && angle < 45) dir = 'd';
-        else if (angle >= 45 && angle < 135) dir = 's';
-        else if (angle >= -135 && angle < -45) dir = 'w';
+      // Axis-based: pick the dominant axis, so diagonals feel deliberate
+      // and a small horizontal wobble doesn't snap the tank sideways.
+      const applyAxis = (dx, dy) => {
         clearDir();
-        this.keys[dir] = true;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          if (dx > 0) this.keys['d'] = true;
+          else if (dx < 0) this.keys['a'] = true;
+        } else {
+          if (dy > 0) this.keys['s'] = true;
+          else if (dy < 0) this.keys['w'] = true;
+        }
       };
 
       const resetKnob = () => {
         jKnob.style.transform = 'translate(-50%, -50%)';
         clearDir();
+        lastDir = '';
       };
 
-      jZone.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const now = Date.now();
-        if (now - lastTapTime < 350) {
-          if (this.state === STATE.PLAYING) this.state = STATE.PAUSED;
-          else if (this.state === STATE.PAUSED) this.state = STATE.PLAYING;
-          sound.resume();
-          lastTapTime = 0;
-          return;
-        }
-        lastTapTime = now;
-
-        const touch = e.changedTouches[0];
-        jTouchId = touch.identifier;
-        const rect = jZone.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dx = touch.clientX - cx;
-        const dy = touch.clientY - cy;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-        if (dist < 10) {
-          clearDir();
-        } else {
-          const clampedDist = Math.min(dist, J_RADIUS);
-          const kx = (clampedDist / dist) * dx;
-          const ky = (clampedDist / dist) * dy;
-          jKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
-          setDirFromAngle(angle);
-        }
-
-        sound.resume();
-      }, { passive: false });
-
-      jZone.addEventListener('touchmove', (e) => {
+      const handle = (e, isStart) => {
         e.preventDefault();
         let touch = null;
-        for (const t of e.changedTouches) {
-          if (t.identifier === jTouchId) { touch = t; break; }
+        const list = isStart ? e.changedTouches : e.changedTouches;
+        for (const t of list) {
+          if (isStart || t.identifier === jTouchId) { touch = t; break; }
         }
         if (!touch) return;
-
+        if (isStart) {
+          const now = Date.now();
+          // Double-tap (quick second tap near center) toggles pause
+          if (now - lastTapTime < 300 && lastTapNearCenter) {
+            if (this.state === STATE.PLAYING) this.state = STATE.PAUSED;
+            else if (this.state === STATE.PAUSED) this.state = STATE.PLAYING;
+            sound.resume();
+            lastTapTime = 0;
+            return;
+          }
+          lastTapTime = now;
+          jTouchId = touch.identifier;
+        }
         const rect = jZone.getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
         const dx = touch.clientX - cx;
         const dy = touch.clientY - cy;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        const clampedDist = Math.min(dist, J_RADIUS);
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (isStart) lastTapNearCenter = dist < 24;
 
+        if (dist < DEAD) {
+          if (lastDir !== 'none') { lastDir = 'none'; clearDir(); resetKnob(); }
+          return;
+        }
+        const clampedDist = Math.min(dist, J_RADIUS);
         const kx = (clampedDist / dist) * dx;
         const ky = (clampedDist / dist) * dy;
         jKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+        const ndir = dx > Math.abs(dy) ? (dx > 0 ? 'd' : 'a') : (dy > 0 ? 's' : 'w');
+        if (ndir !== lastDir) { lastDir = ndir; applyAxis(dx, dy); }
+        sound.resume();
+      };
 
-        if (dist < 10) {
-          clearDir();
-        } else {
-          setDirFromAngle(angle);
-        }
-      }, { passive: false });
-
+      let lastTapNearCenter = false;
+      jZone.addEventListener('touchstart', (e) => handle(e, true), { passive: false });
+      jZone.addEventListener('touchmove', (e) => handle(e, false), { passive: false });
       jZone.addEventListener('touchend', (e) => {
         for (const t of e.changedTouches) {
           if (t.identifier === jTouchId) {
@@ -977,7 +1174,6 @@ class BattleCity {
           }
         }
       }, { passive: true });
-
       jZone.addEventListener('touchcancel', () => {
         jTouchId = null;
         resetKnob();
@@ -1011,9 +1207,12 @@ class BattleCity {
     this.powerupIndicator.style.display = 'none';
     this.player1 = new Tank(8 * CELL + 1, 24 * CELL + 1, DIR.UP, true, 0);
     this.player1.speed = this.difficulty === 'easy' ? 2.5 : this.difficulty === 'hard' ? 1.5 : 2;
+    // 闯关模式保留 P1 洋枪
+    this.player1.superBullet = this.campaignMode && this.campaignP1Super;
     if (this.doubleMode) {
       this.player2 = new Tank(17 * CELL + 1, 24 * CELL + 1, DIR.UP, true, 1);
       this.player2.speed = this.difficulty === 'easy' ? 2.5 : this.difficulty === 'hard' ? 1.5 : 2;
+      this.player2.superBullet = this.campaignMode && this.campaignP2Super;
     }
 
     this.state = STATE.PLAYING;
@@ -1022,8 +1221,17 @@ class BattleCity {
   start(level, doubleMode, difficulty) {
     this.doubleMode = doubleMode;
     this.difficulty = difficulty || 'medium';
-    this.score = 0;
-    this.lives = this.difficulty === 'easy' ? 5 : this.difficulty === 'hard' ? 2 : 3;
+    // 单人闯关模式：读取勾选框；新开局时重置跨关进度
+    const cb = document.getElementById('campaign-toggle');
+    this.campaignMode = cb ? cb.checked : true;
+    if (!this.campaignMode) {
+      this.campaignScore = 0;
+      this.campaignLives = this.difficulty === 'easy' ? 5 : this.difficulty === 'hard' ? 2 : 3;
+      this.campaignP1Super = false;
+      this.campaignP2Super = false;
+    }
+    this.score = this.campaignMode ? this.campaignScore : 0;
+    this.lives = this.campaignMode ? this.campaignLives : (this.difficulty === 'easy' ? 5 : this.difficulty === 'hard' ? 2 : 3);
     this.resetLevel(level);
     document.getElementById('menu-overlay').style.display = 'none';
     document.getElementById('gameover-overlay').style.display = 'none';
@@ -1034,12 +1242,36 @@ class BattleCity {
   }
 
   gameLoop(time) {
+    // Delta-time: run the sim at a fixed 60Hz regardless of display refresh
+    // rate, so movement/shooting feel identical on 60/120/144Hz screens.
+    if (!this.lastTime) this.lastTime = time;
+    let dt = time - this.lastTime;
     this.lastTime = time;
-    this.frameCount++;
-    if (this.state === STATE.PLAYING) this.update();
+    if (dt > 250) dt = 250; // tab was hidden; clamp to avoid a huge jump
+    this.acc = (this.acc || 0) + dt;
+    const STEP = 1000 / 60;
+    let steps = 0;
+    while (this.acc >= STEP && steps < 4) {
+      this.frameCount++;
+      if (this.state === STATE.PLAYING) this.update();
+      this.acc -= STEP;
+      steps++;
+    }
+    // Decay screen shake (visual only, runs every frame)
+    if (this.shakeT > 0) {
+      this.shakeT -= dt;
+      const k = Math.max(0, this.shakeT / this.shakeMax);
+      this.shakeX = (Math.random() * 2 - 1) * this.shakeAmp * k;
+      this.shakeY = (Math.random() * 2 - 1) * this.shakeAmp * k;
+    } else { this.shakeX = 0; this.shakeY = 0; }
+
     this.render();
     if (this.state === STATE.PAUSED) this.drawPauseOverlay();
     requestAnimationFrame((t) => this.gameLoop(t));
+  }
+
+  triggerShake(amp, ms) {
+    this.shakeAmp = amp; this.shakeMax = ms; this.shakeT = ms;
   }
 
   update() {
@@ -1061,9 +1293,13 @@ class BattleCity {
       this.updatePlayer(this.player1, this.keys, {
         up:'w', down:'s', left:'a', right:'d', fire:'j'
       });
-    } else if (this.player1 && !this.player1.alive && !this.player1.spawning && this.lives > 0) {
-      this.lives--;
-      this.respawnPlayer(this.player1, 8);
+    } else if (this.player1 && !this.player1.alive && !this.player1.spawning) {
+      // 仅当 P2 未存活（或单人模式）且还有生命时才重生 P1
+      const p2Dead = !this.player2 || (!this.player2.alive && !this.player2.spawning);
+      if ((!this.doubleMode || p2Dead) && this.lives > 0) {
+        this.lives--;
+        this.respawnPlayer(this.player1, 8);
+      }
     }
 
     if (this.doubleMode && this.player2) {
@@ -1071,9 +1307,12 @@ class BattleCity {
         this.updatePlayer(this.player2, this.keys, {
           up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight', fire:'0'
         });
-      } else if (!this.player2.alive && !this.player2.spawning && this.lives > 0) {
-        this.lives--;
-        this.respawnPlayer(this.player2, 17);
+      } else if (!this.player2.alive && !this.player2.spawning) {
+        // 仅当 P1 仍存活且还有生命时才重生 P2
+        if (this.player1 && this.player1.alive && this.lives > 0) {
+          this.lives--;
+          this.respawnPlayer(this.player2, 17);
+        }
       }
     }
 
@@ -1137,6 +1376,7 @@ class BattleCity {
     player.alive = false;
     player.invincible = 120;
     this.spawnAnimations.push({ x: player.x, y: player.y, timer: 60 });
+    sound.play('spawn');
   }
 
   updateEnemies() {
@@ -1208,6 +1448,7 @@ class BattleCity {
       this.enemiesSpawned++;
       this.enemySpawnTimer = 60 + Math.floor(Math.random() * 40);
       this.spawnAnimations.push({ x: ex, y: ey, timer: 60 });
+      if (this.enemiesSpawned <= 3) sound.play('spawn');
     }
   }
 
@@ -1236,9 +1477,24 @@ class BattleCity {
     b.superBullet = !!isSuper;
     this.bullets.push(b);
     sound.play(isSuper ? 'superShoot' : 'shoot');
+    // Muzzle flash: a few bright particles at the barrel tip
+    const fx = bx + size / 2, fy = by + size / 2;
+    const n = isSuper ? 6 : 3;
+    for (let i = 0; i < n; i++) {
+      this.particles.push({
+        x: fx, y: fy,
+        vx: DX[tank.dir] * (1 + Math.random()) + (Math.random() - 0.5) * 1.5,
+        vy: DY[tank.dir] * (1 + Math.random()) + (Math.random() - 0.5) * 1.5,
+        life: 6 + Math.random() * 5, maxLife: 12,
+        size: 2 + Math.random() * 2,
+        color: isSuper ? '#FFD700' : '#fff'
+      });
+    }
+    if (tank.isPlayer) this.triggerShake(isSuper ? 2 : 1, 60);
   }
 
   updateBullets() {
+    if (this.state !== STATE.PLAYING) return;
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const b = this.bullets[i];
       b.x += DX[b.dir] * b.speed;
@@ -1328,10 +1584,16 @@ class BattleCity {
       tank.alive = false;
       sound.play('explosion');
       this.addExplosion(tank.x + tank.size/2, tank.y + tank.size/2, tank.size + 20, tank.size + 20);
+      this.triggerShake(tank.isPlayer ? 7 : 4, tank.isPlayer ? 260 : 160);
 
       if (!tank.isPlayer) {
         this.score += tank.scoreValue || 100;
         if (Math.random() < 0.18) this.spawnPowerup(tank.x, tank.y);
+        // 全部敌人消灭 → 过关
+        if (this.enemiesSpawned >= this.totalEnemies &&
+            this.enemies.filter(e => e.alive || e.spawning).length === 0) {
+          this.completeLevel();
+        }
       }
     } else {
       sound.play('hit');
@@ -1339,10 +1601,12 @@ class BattleCity {
   }
 
   destroyBase() {
+    if (this.state !== STATE.PLAYING) return; // 避免重复触发
     for (let r = 24; r < 26; r++)
       for (let c = 12; c < 14; c++) this.map[r][c] = TILE.EMPTY;
     this.addExplosion(12*CELL+CELL/2, 24*CELL+CELL/2, 2*CELL, 2*CELL);
     sound.play('explosion');
+    this.triggerShake(10, 400);
     this.gameOver();
   }
 
@@ -1355,7 +1619,15 @@ class BattleCity {
   }
 
   completeLevel() {
+    if (this.state !== STATE.PLAYING) return;
     this.state = STATE.LEVEL_COMPLETE;
+    // 闯关模式：保存跨关进度
+    if (this.campaignMode) {
+      this.campaignScore = this.score;
+      this.campaignLives = Math.max(0, this.lives);
+      this.campaignP1Super = !!(this.player1 && this.player1.superBullet);
+      this.campaignP2Super = !!(this.player2 && this.player2.superBullet);
+    }
     document.getElementById('level-complete-overlay').style.display = 'flex';
     document.getElementById('stage-score').textContent = this.score;
     sound.play('levelUp');
@@ -1553,6 +1825,9 @@ class BattleCity {
     const bg = this.theme ? this.theme.bg : '#1a1a1a';
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
+    // Screen shake (applies to everything drawn below)
+    ctx.save();
+    if (this.shakeX || this.shakeY) ctx.translate(this.shakeX, this.shakeY);
     this.drawMap(ctx);
     this.drawPowerups(ctx);
 
@@ -1576,9 +1851,16 @@ class BattleCity {
     }
     ctx.globalAlpha = 1;
 
+    ctx.restore(); // end screen shake
+
     if (this.freezeTimer > 0) {
-      ctx.fillStyle = 'rgba(100, 180, 255, 0.08)';
+      ctx.fillStyle = 'rgba(100, 180, 255, 0.10)';
       ctx.fillRect(0, 0, W, H);
+      // pulsing icy border
+      const pulse = 0.5 + Math.sin(this.frameCount * 0.15) * 0.5;
+      ctx.strokeStyle = `rgba(150, 210, 255, ${0.25 + pulse * 0.35})`;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(2, 2, W - 4, H - 4);
     }
   }
 
@@ -1767,15 +2049,18 @@ class BattleCity {
 
   drawPauseOverlay() {
     const ctx = this.ctx;
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#fff';
-    ctx.font = '20px "Press Start 2P"';
+    const isMobile = 'ontouchstart' in window && window.innerWidth <= 900;
+    ctx.fillStyle = '#FFD700';
+    ctx.font = '22px "Press Start 2P"';
     ctx.textAlign = 'center';
-    ctx.fillText('PAUSED', W/2, H/2 - 10);
+    ctx.shadowColor = 'rgba(255,215,0,0.6)'; ctx.shadowBlur = 14;
+    ctx.fillText('PAUSED', W/2, H/2 - 12);
+    ctx.shadowBlur = 0;
     ctx.font = '8px "Press Start 2P"';
-    ctx.fillStyle = '#888';
-    ctx.fillText('PRESS P TO CONTINUE', W/2, H/2 + 20);
+    ctx.fillStyle = '#aab';
+    ctx.fillText(isMobile ? 'TAP ❚❚ OR DOUBLE-TAP JOYSTICK' : 'PRESS P TO CONTINUE', W/2, H/2 + 22);
   }
 }
 
@@ -1949,6 +2234,7 @@ function startGame(level, doubleMode, difficulty) {
 
 function showStageSelect() {
   initGame();
+  sound.play('select');
   const container = document.getElementById('stage-buttons');
   container.innerHTML = '';
   for (let i = 1; i <= 10; i++) {
@@ -1957,7 +2243,7 @@ function showStageSelect() {
     const themeName = THEMES[LEVELS[i-1].theme].name;
     btn.innerHTML = '<div class="stage-num">STAGE ' + i + '</div><div class="stage-theme">' + themeName + '</div>';
     const stageIdx = i - 1;
-    btn.onclick = function() { showDifficultySelect(stageIdx, false); };
+    btn.onclick = function() { sound.play('select'); showDifficultySelect(stageIdx, false); };
     container.appendChild(btn);
   }
   document.getElementById('stage-select').style.display = 'flex';
@@ -1968,6 +2254,7 @@ let pendingGameConfig = null;
 
 function showDifficultySelect(level, doubleMode) {
   pendingGameConfig = { level, doubleMode };
+  sound.play('select');
   document.getElementById('difficulty-select').style.display = 'flex';
   document.getElementById('menu-overlay').style.display = 'none';
   document.getElementById('stage-select').style.display = 'none';
@@ -1975,12 +2262,14 @@ function showDifficultySelect(level, doubleMode) {
 
 function startWithDifficulty(difficulty) {
   if (pendingGameConfig) {
+    sound.play('select');
     startGame(pendingGameConfig.level + 1, pendingGameConfig.doubleMode, difficulty);
     pendingGameConfig = null;
   }
 }
 
 function backToMenu() {
+  sound.play('select');
   if (game) game.state = STATE.MENU;
   pendingGameConfig = null;
   document.getElementById('menu-overlay').style.display = 'flex';
@@ -1991,18 +2280,26 @@ function backToMenu() {
 }
 
 function nextLevel() {
+  sound.play('select');
   if (game) {
     const nextLvl = game.level + 1;
     if (nextLvl >= LEVELS.length) {
+      // 已通关最后一关
       backToMenu();
       return;
     }
     document.getElementById('level-complete-overlay').style.display = 'none';
+    game.lives = game.campaignMode ? game.campaignLives : (game.difficulty === 'easy' ? 5 : game.difficulty === 'hard' ? 2 : 3);
     game.resetLevel(nextLvl);
   }
 }
 
 window.addEventListener('load', () => { initGame(); });
+
+// Unlock audio on the first user gesture (browsers require a user action)
+function unlockAudio() { sound.init(); sound.resume(); }
+window.addEventListener('pointerdown', unlockAudio, { once: true });
+window.addEventListener('keydown', unlockAudio, { once: true });
 </script>
 </body>
 </html>

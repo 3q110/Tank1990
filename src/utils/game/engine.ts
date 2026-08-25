@@ -1,4 +1,4 @@
-import { COLS, ROWS, CELL, W, H, DX, DY, ENEMY_SPEEDS, ENEMY_HP, ENEMY_COLORS } from './constants';
+import { COLS, ROWS, CELL, W, H, DX, DY, ENEMY_SPEEDS, ENEMY_HP } from './constants';
 import { LEVELS, getLevelTheme } from './levels';
 import { Tank, Bullet } from './entities';
 import { sound } from './sound';
@@ -18,6 +18,14 @@ interface PowerupItem {
   blinking: boolean;
   blinkTimer: number;
 }
+
+// 兼容微信小游戏和 H5 的 requestAnimationFrame / cancelAnimationFrame
+const rAF = (typeof wx !== 'undefined' && wx.requestAnimationFrame)
+  ? wx.requestAnimationFrame.bind(wx)
+  : (typeof window !== 'undefined' ? window.requestAnimationFrame.bind(window) : (cb: FrameRequestCallback) => setTimeout(cb, 16));
+const cAF = (typeof wx !== 'undefined' && wx.cancelAnimationFrame)
+  ? wx.cancelAnimationFrame.bind(wx)
+  : (typeof window !== 'undefined' ? window.cancelAnimationFrame.bind(window) : clearTimeout);
 
 export class GameEngine {
   canvas: HTMLCanvasElement | null = null;
@@ -51,11 +59,94 @@ export class GameEngine {
   lastTime = 0;
   animFrameId: number | null = null;
   onStateChange?: (state: number, data?: any) => void;
+  // 屏幕震动（视觉反馈）
+  shakeX = 0; shakeY = 0; shakeT = 0; shakeMax = 1; shakeAmp = 0;
+  triggerShake(amp: number, ms: number) { this.shakeAmp = amp; this.shakeMax = ms; this.shakeT = ms; }
+  updateShake(dt: number) {
+    if (this.shakeT > 0) {
+      this.shakeT -= dt;
+      const k = Math.max(0, this.shakeT / this.shakeMax);
+      this.shakeX = (Math.random() * 2 - 1) * this.shakeAmp * k;
+      this.shakeY = (Math.random() * 2 - 1) * this.shakeAmp * k;
+    } else { this.shakeX = 0; this.shakeY = 0; }
+  }
 
-  start(level: number, doubleMode: boolean) {
+  // ========== 难度与单人闯关模式 ==========
+  // difficulty: 'easy' | 'medium' | 'hard'（单人闯关模式的难度档位）
+  difficulty: 'easy' | 'medium' | 'hard' = 'medium';
+  // campaignMode: 单人闯关模式（从第 1 关连续打到最后一关，生命/洋枪/星级跨关保留）
+  campaignMode = false;
+  // 跨关保留的进度
+  private campaignScore = 0;
+  private campaignLives = 3;
+  private campaignP1Super = false;
+  private campaignP2Super = false;
+  private campaignP1Speed = 2;
+  private campaignP2Speed = 2;
+
+  /** 难度对应的参数配置 */
+  private get diffConfig() {
+    switch (this.difficulty) {
+      case 'easy':
+        return { lives: 5, totalDelta: -4, maxEnemies: 3, spawnTimer: 90, speedMul: 0.7, playerSpeed: 2.5, enemyHp: 0.8 };
+      case 'hard':
+        return { lives: 2, totalDelta: 8, maxEnemies: 6, spawnTimer: 30, speedMul: 1.3, playerSpeed: 1.7, enemyHp: 1.25 };
+      default:
+        return { lives: 3, totalDelta: 0, maxEnemies: 4, spawnTimer: 60, speedMul: 1.0, playerSpeed: 2.0, enemyHp: 1.0 };
+    }
+  }
+
+  /**
+   * 开始一局（单人闯关模式）。
+   * @param doubleMode 是否双人
+   * @param difficulty 难度（easy/medium/hard）
+   * @param campaign 是否单人闯关模式（从第 1 关连续打到最后一关，进度跨关保留）
+   */
+  startCampaign(doubleMode: boolean, difficulty: 'easy' | 'medium' | 'hard', campaign: boolean) {
     this.doubleMode = doubleMode;
-    this.score = 0;
-    this.lives = 3;
+    this.difficulty = difficulty || 'medium';
+    this.campaignMode = !!campaign;
+    this.campaignScore = 0;
+    this.campaignLives = this.diffConfig.lives;
+    this.campaignP1Super = false;
+    this.campaignP2Super = false;
+    this.campaignP1Speed = this.diffConfig.playerSpeed;
+    this.campaignP2Speed = this.diffConfig.playerSpeed;
+    this.initLevel(0, doubleMode);
+    sound.init();
+  }
+
+  /**
+   * 进入下一关（保留闯关模式下的生命/洋枪/星级进度）。
+   */
+  nextLevel() {
+    if (this.campaignMode) {
+      // 保留进度
+      this.campaignScore = this.score;
+      this.campaignLives = Math.max(0, this.lives);
+      this.campaignP1Super = !!(this.player1 && this.player1.superBullet);
+      this.campaignP2Super = !!(this.player2 && this.player2.superBullet);
+      this.campaignP1Speed = this.player1 ? this.player1.speed : this.campaignP1Speed;
+      this.campaignP2Speed = this.player2 ? this.player2.speed : this.campaignP2Speed;
+    } else {
+      this.campaignScore = 0;
+      this.campaignLives = this.diffConfig.lives;
+      this.campaignP1Super = false;
+      this.campaignP2Super = false;
+      this.campaignP1Speed = this.diffConfig.playerSpeed;
+      this.campaignP2Speed = this.diffConfig.playerSpeed;
+    }
+    this.initLevel(this.level + 1, this.doubleMode);
+  }
+
+  /**
+   * 初始化关卡（不启动内部循环，由外部主循环驱动 update/render）
+   */
+  initLevel(level: number, doubleMode: boolean) {
+    this.doubleMode = doubleMode;
+    // 闯关模式下保留分数与生命，否则重置
+    this.score = this.campaignMode ? this.campaignScore : 0;
+    this.lives = this.campaignMode ? this.campaignLives : this.diffConfig.lives;
     this.resetLevel(level);
     sound.init();
   }
@@ -64,6 +155,7 @@ export class GameEngine {
     this.level = level;
     const src = LEVELS[Math.min(level, LEVELS.length - 1)];
     this.theme = getLevelTheme(level);
+    const cfg = this.diffConfig;
     this.map = [];
     for (let r = 0; r < ROWS; r++) {
       this.map[r] = [];
@@ -74,38 +166,49 @@ export class GameEngine {
     this.powerups = [];
     this.enemies = [];
     this.enemiesSpawned = 0;
-    this.totalEnemies = src.totalEnemies || 20;
-    this.enemySpawnTimer = 30;
+    // 难度影响敌人总数与同屏数量
+    this.totalEnemies = Math.max(8, (src.totalEnemies || 20) + cfg.totalDelta);
+    this.maxEnemies = cfg.maxEnemies;
+    this.enemySpawnTimer = cfg.spawnTimer;
     this.powerupTimer = 200;
     this.spawnAnimations = [];
     this.freezeTimer = 0;
     this.hornTimer = 0;
     this.timerItemActive = false;
+    this.frameCount = 0;
 
     this.player1 = new Tank(8 * CELL + 1, 24 * CELL + 1, 0, true, 0);
-    this.player1.speed = 2;
+    // 闯关模式保留玩家进度（洋枪/速度），否则用难度配置
+    this.player1.speed = this.campaignMode ? this.campaignP1Speed : cfg.playerSpeed;
+    this.player1.superBullet = this.campaignMode && this.campaignP1Super;
     if (this.doubleMode) {
       this.player2 = new Tank(17 * CELL + 1, 24 * CELL + 1, 0, true, 1);
-      this.player2.speed = 2;
+      this.player2.speed = this.campaignMode ? this.campaignP2Speed : cfg.playerSpeed;
+      this.player2.superBullet = this.campaignMode && this.campaignP2Super;
     }
-    this.lives = 3;
+    this.lives = this.campaignMode ? this.campaignLives : cfg.lives;
     this.state = 1;
-    this.lastTime = performance.now();
-    this.gameLoop(this.lastTime);
   }
 
+  /**
+   * 引擎自身的游戏循环（用于 Taro GameCanvas 等场景）。
+   * 注意：若由外部主循环驱动 update/render（如微信小游戏入口 src/game.ts），
+   * 则不要调用本方法，直接调用 update()/render() 即可。
+   */
   gameLoop(time: number) {
+    const dt = this.lastTime ? time - this.lastTime : 16;
     this.lastTime = time;
     this.frameCount++;
+    this.updateShake(Math.min(dt, 250));
     if (this.state === 1) this.update();
     this.render();
     if (this.state === 4) this.drawPauseOverlay();
-    this.animFrameId = requestAnimationFrame((t) => this.gameLoop(t));
+    this.animFrameId = rAF((t: number) => this.gameLoop(t));
   }
 
   stop() {
     if (this.animFrameId !== null) {
-      cancelAnimationFrame(this.animFrameId);
+      cAF(this.animFrameId);
       this.animFrameId = null;
     }
   }
@@ -119,17 +222,24 @@ export class GameEngine {
 
     if (this.player1 && this.player1.alive) {
       this.updatePlayer(this.player1, this.keys, { up:'w', down:'s', left:'a', right:'d', fire:'j' });
-    } else if (this.player1 && !this.player1.alive && !this.player1.spawning && this.lives > 0) {
-      this.lives--;
-      this.respawnPlayer(this.player1, 8);
+    } else if (this.player1 && !this.player1.alive && !this.player1.spawning) {
+      // 仅当 P2 未存活（或单人模式）且还有生命时才重生成 P1；
+      // 否则等待 checkGameOver 判定，避免两人同时阵亡后反复重生。
+      if ((!this.doubleMode || !this.player2 || (!this.player2.alive && !this.player2.spawning)) && this.lives > 0) {
+        this.lives--;
+        this.respawnPlayer(this.player1, 8);
+      }
     }
 
     if (this.doubleMode && this.player2) {
       if (this.player2.alive) {
         this.updatePlayer(this.player2, this.keys, { up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight', fire:'0' });
-      } else if (!this.player2.alive && !this.player2.spawning && this.lives > 0) {
-        this.lives--;
-        this.respawnPlayer(this.player2, 17);
+      } else if (!this.player2.alive && !this.player2.spawning) {
+        // 仅当 P1 仍存活且还有生命时才重生成 P2
+        if (this.player1 && this.player1.alive && this.lives > 0) {
+          this.lives--;
+          this.respawnPlayer(this.player2, 17);
+        }
       }
     }
 
@@ -141,6 +251,16 @@ export class GameEngine {
     this.updateParticles();
     this.updatePowerups();
     this.checkGameOver();
+  }
+
+  /**
+   * 供外部主循环在状态切换后调用：若当前关卡已全部清完，返回 true。
+   * （引擎内部 checkGameOver 也会自动触发 state=2，这里作为兜底查询。）
+   */
+  isLevelCleared(): boolean {
+    if (this.state !== 1) return this.state === 2;
+    return this.enemiesSpawned >= this.totalEnemies &&
+      this.enemies.filter(e => e.alive || e.spawning).length === 0;
   }
 
   updatePlayer(player: Tank, keys: Record<string, boolean>, controls: { up:string; down:string; left:string; right:string; fire:string }) {
@@ -186,7 +306,12 @@ export class GameEngine {
   }
 
   private tankCollides(x: number, y: number, self: Tank): boolean {
-    const allTanks = [this.player1, this.player2, ...this.enemies].filter(t => t && t.alive && !t.spawning && t !== self);
+    const allTanks: Tank[] = [];
+    if (this.player1 && this.player1.alive && !this.player1.spawning && this.player1 !== self) allTanks.push(this.player1);
+    if (this.player2 && this.player2.alive && !this.player2.spawning && this.player2 !== self) allTanks.push(this.player2);
+    for (const e of this.enemies) {
+      if (e.alive && !e.spawning && e !== self) allTanks.push(e);
+    }
     for (const t of allTanks) {
       if (x < t.x + t.size && x + self.size > t.x && y < t.y + t.size && y + self.size > t.y) return true;
     }
@@ -204,6 +329,7 @@ export class GameEngine {
     player.superBullet = false;
     player.shieldTimer = 0;
     this.spawnAnimations.push({ x: player.x, y: player.y, timer: 60 });
+    sound.play('spawn');
   }
 
   fireBullet(tank: Tank) {
@@ -220,13 +346,14 @@ export class GameEngine {
     const b = new Bullet(bx, by, tank.dir, tank, bSpeed);
     b.superBullet = !!tank.superBullet;
     this.bullets.push(b);
-    sound.play(tank.superBullet ? 'superShoot' as any : 'shoot' as any);
+    sound.play(tank.superBullet ? 'superShoot' : 'shoot');
   }
 
   updateEnemies() {
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const e = this.enemies[i];
-      if (!e.alive) { this.enemies.splice(i, 1); continue; }
+      // 出生中的敌人（alive=false, spawning=true）不能被移除，等待出生完成
+      if (!e.alive && !e.spawning) { this.enemies.splice(i, 1); continue; }
 
       if (e.spawning) {
         e.spawnTimer--;
@@ -287,8 +414,10 @@ export class GameEngine {
 
       const enemy = new Tank(ex, ey, 2, false);
       enemy.enemyType = type;
-      enemy.speed = ENEMY_SPEEDS[type] || 1;
-      enemy.hp = ENEMY_HP[type] || 1;
+      // 难度影响敌人速度与血量
+      const cfg = this.diffConfig;
+      enemy.speed = (ENEMY_SPEEDS[type] || 1) * cfg.speedMul;
+      enemy.hp = Math.max(1, Math.round((ENEMY_HP[type] || 1) * cfg.enemyHp));
       enemy.spawning = true;
       enemy.spawnTimer = 60;
       enemy.alive = false;
@@ -297,6 +426,7 @@ export class GameEngine {
       this.enemies.push(enemy);
       this.enemiesSpawned++;
       this.spawnAnimations.push({ x: ex, y: ey, timer: 60 });
+      if (this.enemiesSpawned <= 3) sound.play('spawn');
     }
   }
 
@@ -308,58 +438,65 @@ export class GameEngine {
       const result = b.update(this.map);
       if (result.hitBrick || result.hitSteel) {
         this.spawnBrickParticles(result.bx!, result.by!);
-        if (result.hitSteel) sound.play('hit' as any);
+        sound.play('hit');
       }
       if (result.hitBase) {
-        this.state = 3;
-        this.onStateChange?.(3, { score: this.score, level: this.level });
-        sound.play('gameOver' as any);
-        return;
+        // 基地被炸毁：清空基地格子，判负逻辑交给 checkGameOver 统一处理
+        this.destroyBaseTiles();
+        if (!b.alive) { this.bullets.splice(i, 1); continue; }
       }
 
       if (!b.alive) { this.bullets.splice(i, 1); continue; }
 
-      const allTanks = [this.player1, this.player2, ...this.enemies].filter(t => t && t !== b.owner);
+      const allTanks: Tank[] = [];
+      if (this.player1 && this.player1 !== b.owner) allTanks.push(this.player1);
+      if (this.player2 && this.player2 !== b.owner) allTanks.push(this.player2);
+      for (const e of this.enemies) if (e !== b.owner) allTanks.push(e);
       for (const tank of allTanks) {
         if (b.hitsTank(tank)) {
-          b.alive = false;
           this.hitTank(tank, b);
-          this.bullets.splice(i, 1);
+          // 超级子弹可穿透敌人，普通子弹被消灭
+          if (!b.superBullet) {
+            b.alive = false;
+            this.bullets.splice(i, 1);
+          }
           break;
         }
       }
     }
   }
 
-  private hitTank(tank: Tank, bullet: Bullet) {
+  private hitTank(tank: Tank, _bullet: Bullet) {
     if (tank.invincible > 0 || tank.spawning) return;
     if (tank.shieldTimer > 0 && tank.isPlayer) {
       tank.shieldTimer = 0;
-      sound.play('hit' as any);
+      sound.play('hit');
       return;
     }
     tank.hp--;
     if (tank.hp <= 0) {
       tank.alive = false;
       this.spawnExplosion(tank.x + tank.size / 2, tank.y + tank.size / 2);
-      sound.play('explosion' as any);
+      sound.play('explosion');
+      this.triggerShake(tank.isPlayer ? 7 : 4, tank.isPlayer ? 260 : 160);
       if (tank.isPlayer) {
-        if (!this.player1?.alive && !this.player2?.alive && this.lives <= 0) {
-          this.state = 3;
-          this.onStateChange?.(3, { score: this.score, level: this.level });
-          sound.play('gameOver' as any);
-        }
+        // 生命耗尽判负统一由 checkGameOver 处理
       } else {
         this.score += 100;
         if (Math.random() < 0.15) this.spawnPowerup(tank.x, tank.y);
-        if (this.enemies.filter(e => e.alive || e.spawning).length === 0 && this.enemiesSpawned >= this.totalEnemies) {
-          this.state = 2;
-          this.onStateChange?.(2, { score: this.score, level: this.level });
-          sound.play('levelComplete' as any);
-        }
+        // 过关判定统一由 checkGameOver 处理
       }
     } else {
-      sound.play('hit' as any);
+      sound.play('hit');
+    }
+  }
+
+  /** 清空基地的 4 个格子（基地被摧毁时调用） */
+  private destroyBaseTiles() {
+    for (const r of [24, 25]) {
+      for (const c of [12, 13]) {
+        if (this.map[r] && this.map[r][c] === 5) this.map[r][c] = 0;
+      }
     }
   }
 
@@ -399,28 +536,44 @@ export class GameEngine {
   }
 
   updatePowerups() {
+    // 定时掉落道具
+    this.powerupTimer--;
+    if (this.powerupTimer <= 0) {
+      this.powerupTimer = this.powerupInterval + Math.floor(Math.random() * 200);
+      const col = 1 + Math.floor(Math.random() * (COLS - 2));
+      const row = 4 + Math.floor(Math.random() * (ROWS - 12));
+      const tile = this.map[row]?.[col];
+      // 避免掉在墙/钢/水/基地上
+      if (tile !== 1 && tile !== 2 && tile !== 4 && tile !== 5 && tile !== 6) {
+        this.spawnPowerup(col * CELL, row * CELL);
+      }
+    }
+
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
       if (p.blinking) {
         p.blinkTimer--;
         if (p.blinkTimer <= 0) { this.powerups.splice(i, 1); continue; }
       }
-      const players = [this.player1, this.player2].filter(p => p && p.alive);
+      const players = [this.player1, this.player2].filter(pl => pl && pl.alive);
+      let picked = false;
       for (const player of players) {
         if (!player) continue;
         if (player.x < p.x + 26 && player.x + player.size > p.x &&
           player.y < p.y + 26 && player.y + player.size > p.y) {
           this.applyPowerup(player, p.type);
           this.powerups.splice(i, 1);
-          sound.play('powerup' as any);
+          sound.play('powerup');
+          picked = true;
           break;
         }
       }
-      if (this.powerups[i] && !this.powerups[i].blinking) {
+      if (picked) continue;
+      if (!p.blinking) {
         p.blinkTimer++;
         if (p.blinkTimer > 600) {
           p.blinking = true;
-          p.blinkTimer = 60;
+          p.blinkTimer = 90;
         }
       }
     }
@@ -446,8 +599,10 @@ export class GameEngine {
         }
         break;
       case 'timer':
-        this.freezeTimer = 300;
+        // 冻结全场敌人约 8 秒（300 帧）
+        this.freezeTimer = Math.max(this.freezeTimer, 300);
         this.timerItemActive = true;
+        sound.play('hit');
         break;
       case 'horn':
         this.hornTimer = 300;
@@ -471,13 +626,35 @@ export class GameEngine {
 
   checkGameOver() {
     if (this.state !== 1) return;
-    if (this.player1) {
-      const baseDestroyed = (this.map[24]?.[12] === 0 && this.map[24]?.[13] === 0);
-      if (baseDestroyed) {
-        this.state = 3;
-        this.onStateChange?.(3, { score: this.score, level: this.level });
-        sound.play('gameOver' as any);
-      }
+
+    // 基地被摧毁 → 立即判负（基地格子 24/25 行 × 12/13 列被清空）
+    const baseDestroyed =
+      (this.map[24]?.[12] === 0 && this.map[24]?.[13] === 0) ||
+      (this.map[25]?.[12] === 0 && this.map[25]?.[13] === 0);
+    if (baseDestroyed) {
+      this.state = 3;
+      this.onStateChange?.(3, { score: this.score, level: this.level, baseDestroyed: true });
+      sound.play('gameOver');
+      return;
+    }
+
+    // 全部敌人消灭 → 过关
+    if (this.enemiesSpawned >= this.totalEnemies &&
+        this.enemies.filter(e => e.alive || e.spawning).length === 0) {
+      this.state = 2;
+      this.onStateChange?.(2, { score: this.score, level: this.level });
+      sound.play('levelComplete');
+      return;
+    }
+
+    // 生命耗尽 → 判负
+    const p1Dead = !this.player1 || (!this.player1.alive && !this.player1.spawning);
+    const p2Dead = !this.player2 || (!this.player2.alive && !this.player2.spawning);
+    const allDead = this.doubleMode ? (p1Dead && p2Dead) : p1Dead;
+    if (this.lives <= 0 && allDead) {
+      this.state = 3;
+      this.onStateChange?.(3, { score: this.score, level: this.level });
+      sound.play('gameOver');
     }
   }
 
@@ -493,6 +670,8 @@ export class GameEngine {
     const bg = this.theme?.bg || '#1a1a1a';
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    if (this.shakeX || this.shakeY) ctx.translate(this.shakeX, this.shakeY);
     this.drawMap(ctx);
     this.drawPowerups(ctx);
 
@@ -515,6 +694,7 @@ export class GameEngine {
       ctx.fillRect(p.x, p.y, p.size, p.size);
     }
     ctx.globalAlpha = 1;
+    ctx.restore(); // end screen shake
   }
 
   private drawMap(ctx: CanvasRenderingContext2D) {

@@ -1,6 +1,6 @@
 {
-  "libVersion": "3.16.0",
-  "projectname": "taro_template",
+  "libVersion": "3.16.1",
+  "projectname": "tank_battle_city",
   "condition": {},
   "setting": {
     "urlCheck": true,
@@ -14,7 +14,7 @@
     "useStaticServer": false,
     "useLanDebug": false,
     "showES6CompileOption": false,
-    "compileHotReLoad": true,
+    "compileHotReLoad": false,
     "checkInvalidKey": true,
     "ignoreDevUnusedFiles": true,
     "bigPackageSizeSupport": false
