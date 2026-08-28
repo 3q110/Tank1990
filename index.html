@@ -780,6 +780,8 @@ const desertTile = 0;
 
 (function(){const g=createLevel(9);for(let r=2;r<23;r+=2){for(let c=0;c<26;c+=2){if(r>=22&&c>=8&&c<=18)continue;g[r][c]=TILE.BRICK}}for(let r=4;r<22;r+=4){g[r][6]=TILE.STEEL;g[r][7]=TILE.STEEL;g[r][18]=TILE.STEEL;g[r][19]=TILE.STEEL}for(let r=2;r<10;r++)g[r][12]=TILE.WATER;for(let r=2;r<10;r++)g[r][13]=TILE.WATER;for(let r=16;r<23;r++){for(let c=2;c<6;c++)g[r][c]=TILE.FOREST;for(let c=20;c<24;c++)g[r][c]=TILE.FOREST}g[10][4]=TILE.BRICK;g[10][5]=TILE.BRICK;g[10][20]=TILE.BRICK;g[10][21]=TILE.BRICK;g[12][8]=TILE.STEEL;g[12][9]=TILE.STEEL;g[12][16]=TILE.STEEL;g[12][17]=TILE.STEEL;g[14][4]=TILE.BRICK;g[14][5]=TILE.BRICK;g[14][8]=TILE.BRICK;g[14][9]=TILE.BRICK;g[14][16]=TILE.BRICK;g[14][17]=TILE.BRICK;g[14][20]=TILE.BRICK;g[14][21]=TILE.BRICK;g[16][10]=TILE.STEEL;g[16][11]=TILE.STEEL;g[16][14]=TILE.STEEL;g[16][15]=TILE.STEEL;for(let r=18;r<22;r++){g[r][11]=TILE.BRICK;g[r][12]=TILE.BRICK;g[r][13]=TILE.BRICK;g[r][14]=TILE.BRICK}LEVELS.push({map:g,theme:5,totalEnemies:26});})();
 
+(function(){const g=createLevel(9);for(let c=2;c<10;c++)g[2][c]=TILE.BRICK;for(let c=16;c<24;c++)g[2][c]=TILE.BRICK;g[2][3]=TILE.STEEL;g[2][8]=TILE.STEEL;g[2][17]=TILE.STEEL;g[2][22]=TILE.STEEL;for(let r=3;r<6;r++){g[r][3]=TILE.STEEL;g[r][9]=TILE.STEEL;g[r][16]=TILE.STEEL;g[r][22]=TILE.STEEL}for(let c=10;c<16;c++){g[5][c]=TILE.WATER;g[10][c]=TILE.WATER}for(let r=4;r<10;r++){g[r][11]=TILE.STEEL;g[r][14]=TILE.STEEL}g[7][12]=TILE.STEEL;g[7][13]=TILE.STEEL;for(let r=6;r<18;r+=3){g[r][1]=TILE.BRICK;g[r][2]=TILE.BRICK;g[r][23]=TILE.BRICK;g[r][24]=TILE.BRICK}for(let r=9;r<20;r+=3){g[r][5]=TILE.BRICK;g[r][6]=TILE.BRICK;g[r][19]=TILE.BRICK;g[r][20]=TILE.BRICK}for(let r=12;r<16;r++){for(let c=2;c<5;c++)g[r][c]=TILE.FOREST;for(let c=21;c<24;c++)g[r][c]=TILE.FOREST}for(let c=8;c<12;c++)g[22][c]=TILE.FOREST;for(let c=14;c<18;c++)g[22][c]=TILE.FOREST;for(let c=8;c<10;c++)g[18][c]=TILE.BRICK;for(let c=16;c<18;c++)g[18][c]=TILE.BRICK;g[20][8]=TILE.STEEL;g[20][9]=TILE.STEEL;g[20][16]=TILE.STEEL;g[20][17]=TILE.STEEL;for(let c=11;c<15;c++)g[21][c]=TILE.BRICK;LEVELS.push({map:g,theme:9,totalEnemies:28});})();
+
 // ============================================================
 // SOUND ENGINE
 // ============================================================
@@ -2237,7 +2239,7 @@ function showStageSelect() {
   sound.play('select');
   const container = document.getElementById('stage-buttons');
   container.innerHTML = '';
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= LEVELS.length; i++) {
     const btn = document.createElement('button');
     btn.className = 'stage-btn';
     const themeName = THEMES[LEVELS[i-1].theme].name;

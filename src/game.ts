@@ -1,7 +1,7 @@
 import { GameEngine } from './utils/game/engine';
 import { W, H, initResponsiveSize } from './utils/game/constants';
 import { sound } from './utils/game/sound';
-import { LEVELS, THEMES } from './utils/game/levels';
+import { LEVELS, THEMES, MAP_OPTIONS } from './utils/game/levels';
 
 // 兼容微信小游戏和 H5 的 requestAnimationFrame
 const rAF = typeof wx !== 'undefined' && typeof wx.requestAnimationFrame === 'function'
@@ -9,7 +9,7 @@ const rAF = typeof wx !== 'undefined' && typeof wx.requestAnimationFrame === 'fu
   : (typeof window !== 'undefined' ? window.requestAnimationFrame.bind(window) : (cb: FrameRequestCallback) => setTimeout(cb, 16));
 
 // 游戏场景状态
-type Scene = 'menu' | 'difficulty' | 'game' | 'records' | 'gameover' | 'levelComplete';
+type Scene = 'menu' | 'difficulty' | 'mapselect' | 'game' | 'records' | 'gameover' | 'levelComplete';
 
 // 难度
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -149,7 +149,7 @@ class MiniGame {
 
   private handleTouchStart(id: number, x: number, y: number) {
     // 菜单 / 难度选择 / 战绩 / 结算 等场景：命中按钮
-    if (['menu', 'difficulty', 'records', 'gameover', 'levelComplete'].includes(this.state.scene)) {
+    if (['menu', 'difficulty', 'mapselect', 'records', 'gameover', 'levelComplete'].includes(this.state.scene)) {
       for (const [key, btn] of Object.entries(this.buttons)) {
         if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
           this.handleMenuButton(key);
@@ -267,6 +267,20 @@ class MiniGame {
       case 'records':
         this.state.scene = 'records';
         break;
+      case 'map':
+        this.state.scene = 'mapselect';
+        break;
+      case 'map0':
+      case 'map1':
+      case 'map2': {
+        const opt = MAP_OPTIONS[Number(key.slice(3))];
+        this.state.selectedLevel = opt.levelIdx;
+        this.state.scene = 'difficulty';
+        break;
+      }
+      case 'mapback':
+        this.state.scene = 'menu';
+        break;
       case 'back':
         this.state.scene = 'menu';
         break;
@@ -350,6 +364,7 @@ class MiniGame {
     switch (this.state.scene) {
       case 'menu': this.renderMenu(ctx); break;
       case 'difficulty': this.renderDifficulty(ctx); break;
+      case 'mapselect': this.renderMapSelect(ctx); break;
       case 'game': this.renderGame(ctx); break;
       case 'records': this.renderRecords(ctx); break;
       case 'gameover': this.renderGameOver(ctx); break;
@@ -394,7 +409,10 @@ class MiniGame {
     this.drawButton(ctx, this.buttons['1p']);
     this.drawButton(ctx, this.buttons['2p']);
 
-    this.buttons['records'] = { x: centerX - 60, y: modeY + 80, w: 120, h: 44, text: '战绩' };
+    this.buttons['map'] = { x: centerX - 70, y: modeY + 80, w: 140, h: 44, text: '选择地图 (3张新图)' };
+    this.drawButton(ctx, this.buttons['map']);
+
+    this.buttons['records'] = { x: centerX - 60, y: modeY + 140, w: 120, h: 44, text: '战绩' };
     this.drawButton(ctx, this.buttons['records']);
 
     ctx.fillStyle = '#666';
@@ -427,6 +445,68 @@ class MiniGame {
 
     this.buttons['back'] = { x: centerX - 60, y: y + 220, w: 120, h: 44, text: '返回' };
     this.drawButton(ctx, this.buttons['back']);
+  }
+
+  private renderMapSelect(ctx: CanvasRenderingContext2D) {
+    const centerX = this.screenWidth / 2;
+    const topY = this.screenHeight * 0.07;
+
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('选择地图', centerX, topY);
+    ctx.fillStyle = '#888';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('SELECT MAP · 自由选择 3 张地图', centerX, topY + 26);
+
+    const cardW = 100, cardH = 150, gap = 12;
+    const totalW = cardW * 3 + gap * 2;
+    const x0 = centerX - totalW / 2;
+    const cardY = topY + 48;
+    const cell = 7; // 13 格 * 7px = 91px 预览
+
+    MAP_OPTIONS.forEach((opt, i) => {
+      const def = LEVELS[opt.levelIdx];
+      const theme = THEMES[def.theme];
+      const cx = x0 + i * (cardW + gap);
+
+      // 卡片底
+      ctx.fillStyle = '#1f1f1f';
+      ctx.fillRect(cx, cardY, cardW, cardH);
+      ctx.strokeStyle = '#FFD700';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cx, cardY, cardW, cardH);
+
+      // 预览（26x26 地图按 2 倍下采样为 13x13）
+      const px0 = cx + (cardW - cell * 13) / 2;
+      const py0 = cardY + 8;
+      for (let r = 0; r < 13; r++) {
+        for (let c = 0; c < 13; c++) {
+          const tile = (def.map[r * 2] && def.map[r * 2][c * 2]) || 0;
+          let color = theme.floorColor;
+          if (tile === 1 || tile === 6) color = theme.wallColor;
+          else if (tile === 2) color = '#999';
+          else if (tile === 3) color = theme.forestColor;
+          else if (tile === 4) color = theme.waterColor;
+          else if (tile === 5) color = '#FFD700';
+          ctx.fillStyle = color;
+          ctx.fillRect(px0 + c * cell, py0 + r * cell, cell, cell);
+        }
+      }
+
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(opt.name, cx + cardW / 2, py0 + cell * 13 + 20);
+      ctx.fillStyle = '#888';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(`第 ${opt.levelIdx + 1} 关`, cx + cardW / 2, py0 + cell * 13 + 38);
+
+      this.buttons[`map${i}`] = { x: cx, y: cardY, w: cardW, h: cardH, text: '' };
+    });
+
+    this.buttons['mapback'] = { x: centerX - 60, y: cardY + cardH + 24, w: 120, h: 44, text: '返回' };
+    this.drawButton(ctx, this.buttons['mapback']);
   }
 
   private drawButton(ctx: CanvasRenderingContext2D, btn: Btn) {

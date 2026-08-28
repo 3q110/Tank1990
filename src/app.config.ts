@@ -2,7 +2,8 @@ export default defineAppConfig({
   pages: [
     'pages/home/index',
     'pages/records/index',
-    'pages/game/index'
+    'pages/game/index',
+    'pages/mapselect/index'
   ],
   window: {
     backgroundTextStyle: 'dark',

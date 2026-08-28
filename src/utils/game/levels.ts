@@ -270,6 +270,100 @@ export const LEVELS: LevelDef[] = [];
   LEVELS.push({ map: g, theme: 9, totalEnemies: 26, enemyTypes: [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,0,0,0] });
 })();
 
+(function() {
+  // Level 11 - 峡谷突围：两侧钢壁夹道 + 中央河流（两座桥）
+  const g = createEmptyGrid(); placeBase(g);
+  // 顶部砖块（保留敌人出生列 0/12/24）
+  setRowRange(g, 0, 2, 5, 1); setRowRange(g, 0, 9, 11, 1);
+  setRowRange(g, 0, 14, 16, 1); setRowRange(g, 0, 20, 23, 1);
+  // 两侧钢壁（列 5-6 / 19-20，行 1-19），缺口在行 6-7 与 13-14
+  for (let r = 1; r <= 19; r++) {
+    if (r === 6 || r === 7 || r === 13 || r === 14) continue;
+    setCell(g, r, 5, 2); setCell(g, r, 6, 2);
+    setCell(g, r, 19, 2); setCell(g, r, 20, 2);
+  }
+  // 中央河流（列 12-13，行 3-19），桥梁在行 8-9 与 15-16
+  for (let r = 3; r <= 19; r++) {
+    if (r === 8 || r === 9 || r === 15 || r === 16) continue;
+    setCell(g, r, 12, 4); setCell(g, r, 13, 4);
+  }
+  // 砖石台地
+  setRowRange(g, 2, 0, 1, 1); setRowRange(g, 2, 24, 25, 1);
+  setRowRange(g, 3, 3, 4, 1); setRowRange(g, 3, 21, 22, 1);
+  setRowRange(g, 10, 0, 2, 1); setRowRange(g, 10, 23, 25, 1);
+  setRowRange(g, 12, 0, 1, 1); setRowRange(g, 12, 24, 25, 1);
+  setRowRange(g, 18, 0, 2, 1); setRowRange(g, 18, 23, 25, 1);
+  setRowRange(g, 20, 3, 4, 1); setRowRange(g, 20, 21, 22, 1);
+  setRowRange(g, 21, 0, 2, 1); setRowRange(g, 21, 23, 25, 1);
+  // 灌木丛
+  setRowRange(g, 2, 10, 15, 3);
+  setRowRange(g, 11, 8, 9, 3); setRowRange(g, 11, 16, 17, 3);
+  setRowRange(g, 17, 8, 9, 3); setRowRange(g, 17, 16, 17, 3);
+  setRowRange(g, 20, 6, 7, 3); setRowRange(g, 20, 18, 19, 3);
+  LEVELS.push({ map: g, theme: 10, totalEnemies: 20, enemyTypes: [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,2] });
+})();
+
+(function() {
+  // Level 12 - 钢铁都市：2x2 钢铁建筑群 + 砖墙街巷 + 中央公园
+  const g = createEmptyGrid(); placeBase(g);
+  // 顶部砖块（保留敌人出生列 0/12/24）
+  setRowRange(g, 0, 3, 5, 1); setRowRange(g, 0, 9, 11, 1);
+  setRowRange(g, 0, 14, 16, 1); setRowRange(g, 0, 20, 22, 1);
+  // 2x2 钢铁建筑（上下两排）
+  const buildings: [number, number][] = [[3,3],[3,9],[3,15],[3,21],[12,3],[12,9],[12,15],[12,21]];
+  for (const [r0, c0] of buildings) {
+    setCell(g, r0, c0, 2); setCell(g, r0, c0 + 1, 2);
+    setCell(g, r0 + 1, c0, 2); setCell(g, r0 + 1, c0 + 1, 2);
+  }
+  // 边缘钢墙
+  setRowRange(g, 7, 0, 1, 2); setRowRange(g, 7, 24, 25, 2);
+  setRowRange(g, 18, 0, 1, 2); setRowRange(g, 18, 24, 25, 2);
+  // 砖墙街巷
+  setRowRange(g, 6, 6, 8, 1); setRowRange(g, 6, 17, 19, 1);
+  setRowRange(g, 10, 0, 2, 1); setRowRange(g, 10, 23, 25, 1);
+  setRowRange(g, 11, 6, 8, 1); setRowRange(g, 11, 17, 19, 1);
+  setRowRange(g, 15, 6, 8, 1); setRowRange(g, 15, 17, 19, 1);
+  setRowRange(g, 17, 0, 2, 1); setRowRange(g, 17, 23, 25, 1);
+  setRowRange(g, 19, 3, 5, 1); setRowRange(g, 19, 20, 22, 1);
+  setRowRange(g, 21, 0, 2, 1); setRowRange(g, 21, 23, 25, 1);
+  // 公园绿荫
+  setRowRange(g, 8, 11, 14, 3);
+  setRowRange(g, 16, 11, 14, 3);
+  setRowRange(g, 20, 8, 9, 3); setRowRange(g, 20, 16, 17, 3);
+  LEVELS.push({ map: g, theme: 11, totalEnemies: 22, enemyTypes: [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2] });
+})();
+
+(function() {
+  // Level 13 - 火山地带：熔岩池群 + 黑曜岩壁 + 基地护城熔岩
+  const g = createEmptyGrid(); placeBase(g);
+  // 熔岩池 2x2
+  const lavaPools: [number, number][] = [[4,6],[4,18],[11,2],[11,22],[17,8],[17,16]];
+  for (const [r0, c0] of lavaPools) {
+    setCell(g, r0, c0, 4); setCell(g, r0, c0 + 1, 4);
+    setCell(g, r0 + 1, c0, 4); setCell(g, r0 + 1, c0 + 1, 4);
+  }
+  // 基地两侧护城熔岩（保留中央 12-13 列通道）
+  setCell(g, 21, 10, 4); setCell(g, 21, 11, 4); setCell(g, 22, 10, 4); setCell(g, 22, 11, 4);
+  setCell(g, 21, 14, 4); setCell(g, 21, 15, 4); setCell(g, 22, 14, 4); setCell(g, 22, 15, 4);
+  // 黑曜岩壁
+  setRowRange(g, 2, 0, 3, 2); setRowRange(g, 2, 22, 25, 2);
+  setRowRange(g, 9, 5, 7, 2); setRowRange(g, 9, 18, 20, 2);
+  setRowRange(g, 15, 0, 2, 2); setRowRange(g, 15, 23, 25, 2);
+  setRowRange(g, 20, 5, 6, 2); setRowRange(g, 20, 19, 20, 2);
+  // 砖石废墟
+  setRowRange(g, 1, 6, 8, 1); setRowRange(g, 1, 17, 19, 1);
+  setRowRange(g, 3, 10, 11, 1); setRowRange(g, 3, 14, 15, 1);
+  setRowRange(g, 7, 0, 2, 1); setRowRange(g, 7, 23, 25, 1);
+  setRowRange(g, 13, 11, 14, 1);
+  setRowRange(g, 19, 3, 4, 1); setRowRange(g, 19, 21, 22, 1);
+  setRowRange(g, 21, 0, 3, 1); setRowRange(g, 21, 22, 25, 1);
+  // 火山植被
+  setRowRange(g, 6, 12, 13, 3);
+  setRowRange(g, 10, 12, 13, 3);
+  setRowRange(g, 16, 12, 13, 3);
+  LEVELS.push({ map: g, theme: 12, totalEnemies: 24, enemyTypes: [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2] });
+})();
+
 export const THEMES = [
   { name: '标准', bg: '#1a1a1a', wallColor: '#8B4513', forestColor: '#228B22', waterColor: '#1E90FF', floorColor: '#2a2a2a', brickAlt: '#A0522D' },
   { name: '丛林', bg: '#0d1f0d', wallColor: '#5C4033', forestColor: '#006400', waterColor: '#006994', floorColor: '#1a2e1a', brickAlt: '#6B4423' },
@@ -280,7 +374,24 @@ export const THEMES = [
   { name: '沙漠', bg: '#2e2414', wallColor: '#7A6345', forestColor: '#4A5B1F', waterColor: '#2471A3', floorColor: '#3e3424', brickAlt: '#8A7355' },
   { name: '标准', bg: '#1a1a1a', wallColor: '#8B4513', forestColor: '#228B22', waterColor: '#1E90FF', floorColor: '#2a2a2a', brickAlt: '#A0522D' },
   { name: '雪原', bg: '#c8d8e8', wallColor: '#6B5B4F', forestColor: '#7B7B7B', waterColor: '#3498DB', floorColor: '#b8c8d8', brickAlt: '#7B6B5F' },
-  { name: '最终', bg: '#0a0a0a', wallColor: '#8B0000', forestColor: '#006400', waterColor: '#191970', floorColor: '#1a0a0a', brickAlt: '#A00000' }
+  { name: '最终', bg: '#0a0a0a', wallColor: '#8B0000', forestColor: '#006400', waterColor: '#191970', floorColor: '#1a0a0a', brickAlt: '#A00000' },
+  { name: '峡谷', bg: '#2b2118', wallColor: '#B87333', forestColor: '#6B8E23', waterColor: '#3A6EA5', floorColor: '#33281c', brickAlt: '#96551E' },
+  { name: '都市', bg: '#141a22', wallColor: '#7A8A99', forestColor: '#2E8B57', waterColor: '#1C6EA4', floorColor: '#1c232d', brickAlt: '#5F6E7D' },
+  { name: '火山', bg: '#190c0c', wallColor: '#8B3A1A', forestColor: '#4A5B23', waterColor: '#FF4500', floorColor: '#241212', brickAlt: '#A0451A' }
+];
+
+export interface MapOption {
+  levelIdx: number;
+  name: string;
+  desc: string;
+  tag: string;
+}
+
+/** 供“地图选择”界面使用的 3 张可选地图 */
+export const MAP_OPTIONS: MapOption[] = [
+  { levelIdx: 10, name: '峡谷突围', desc: '峡谷夹道 · 钢壁河流', tag: '峡谷' },
+  { levelIdx: 11, name: '钢铁都市', desc: '都市街区 · 钢铁建筑', tag: '都市' },
+  { levelIdx: 12, name: '火山地带', desc: '熔岩池群 · 黑曜岩壁', tag: '火山' }
 ];
 
 export function getLevelTheme(levelIdx: number) {
